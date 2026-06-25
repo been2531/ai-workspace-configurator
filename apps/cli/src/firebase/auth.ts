@@ -40,9 +40,11 @@ function saveAuth(user: User, idToken: string): void {
     email: user.email ?? '',
     displayName: user.displayName,
     idToken,
-    expiresAt: Date.now() + 55 * 60 * 1000, // 55분 (여유있게)
+    expiresAt: Date.now() + 55 * 60 * 1000,
   }
   fs.writeFileSync(AUTH_PATH, JSON.stringify(stored, null, 2), 'utf-8')
+  // Unix에서 토큰 파일을 소유자만 읽을 수 있도록 (Windows는 무시)
+  try { fs.chmodSync(AUTH_PATH, 0o600) } catch { /* Windows */ }
 }
 
 export async function loginWithEmail(
