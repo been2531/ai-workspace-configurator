@@ -1,0 +1,49 @@
+{
+  "name": "extension",
+  "displayName": "AI Workspace Configurator",
+  "description": "Claude Code & Codex 성능을 극대화하는 AI 개발 환경 자동 설정 도구",
+  "version": "0.1.0",
+  "publisher": "ai-workspace-configurator",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Other", "Programming Languages"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiWorkspace.configure",
+        "title": "AI Workspace: 프로젝트 설정 생성"
+      },
+      {
+        "command": "aiWorkspace.openPanel",
+        "title": "AI Workspace: 대시보드 열기"
+      },
+      {
+        "command": "aiWorkspace.syncTeam",
+        "title": "AI Workspace: 팀 설정 동기화"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "aiWorkspace.configure" },
+        { "command": "aiWorkspace.openPanel" },
+        { "command": "aiWorkspace.syncTeam" }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@ai-workspace-configurator/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.4.0"
+  }
+}
