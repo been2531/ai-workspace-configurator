@@ -8,6 +8,7 @@
     "dev": "pnpm --filter webview dev",
     "dev:ext": "pnpm --filter extension dev",
     "dev:cli": "pnpm --filter @ai-workspace-configurator/cli dev",
+    "dev:mcp": "pnpm --filter @ai-workspace-configurator/mcp dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean"

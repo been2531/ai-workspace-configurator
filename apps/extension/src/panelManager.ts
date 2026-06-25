@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 import * as path from 'path'
 
 export class PanelManager {
@@ -19,13 +20,19 @@ export class PanelManager {
       'aiWorkspacePanel',
       'AI Workspace Configurator',
       vscode.ViewColumn.Beside,
-      { enableScripts: true, retainContextWhenHidden: true },
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
+        ],
+      },
     )
 
     this.panel.webview.html = this.getHtml()
 
     this.panel.webview.onDidReceiveMessage(
-      (message: { command: string; payload?: unknown }) => {
+      (message: { command: string }) => {
         switch (message.command) {
           case 'configure':
             vscode.commands.executeCommand('aiWorkspace.configure')
@@ -43,6 +50,35 @@ export class PanelManager {
   }
 
   private getHtml(): string {
+    const webview = this.panel!.webview
+    const webviewDir = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview')
+    const htmlPath = path.join(webviewDir.fsPath, 'index.html')
+
+    // React 빌드 결과물이 있으면 사용, 없으면 폴백 UI
+    if (fs.existsSync(htmlPath)) {
+      let html = fs.readFileSync(htmlPath, 'utf-8')
+
+      // Vite 빌드는 절대 경로(/webview.js)를 사용 — webview URI로 교체
+      const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'webview.js'))
+      const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'webview.css'))
+      const nonce = getNonce()
+
+      html = html
+        .replace(/src="\/webview\.js"/, `src="${scriptUri}" nonce="${nonce}"`)
+        .replace(/href="\/webview\.css"/, `href="${cssUri}"`)
+
+      // CSP: module script는 nonce 필수
+      const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">`
+      html = html.replace('<head>', `<head>\n  ${csp}`)
+
+      return html
+    }
+
+    // 폴백: 인라인 UI
+    return this.getFallbackHtml()
+  }
+
+  private getFallbackHtml(): string {
     return `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -70,4 +106,13 @@ export class PanelManager {
 </body>
 </html>`
   }
+}
+
+function getNonce(): string {
+  let text = ''
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
+  }
+  return text
 }

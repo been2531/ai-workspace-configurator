@@ -2,9 +2,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as p from '@clack/prompts'
 import { composeRules } from '@ai-workspace-configurator/core'
-import type { DetectedStack, StackChoice } from '@ai-workspace-configurator/core'
+import type { DetectedStack, StackChoice, CommunityPreset } from '@ai-workspace-configurator/core'
 import { detectStack } from '../stackDetector'
 import { loadProfile } from '../profile'
+import { resolvePreset } from './apply'
+import { isFirebaseConfigured } from '../firebase/config'
 
 export async function initCommand(targetDir: string): Promise<void> {
   const workspaceRoot = path.resolve(targetDir)
@@ -25,7 +27,20 @@ export async function initCommand(targetDir: string): Promise<void> {
   }
 
   const profile = loadProfile()
-  const rules = composeRules({ stack: resolvedStack, profile })
+
+  // profile.basePreset 자동 적용 (3레이어 합성)
+  let preset: CommunityPreset | undefined
+  if (profile.basePreset && isFirebaseConfigured()) {
+    try {
+      const resolved = await resolvePreset(profile.basePreset)
+      if (resolved) {
+        preset = resolved
+        p.log.info(`프리셋 적용 중: ${preset.name} (by ${preset.author})`)
+      }
+    } catch { /* 네트워크 실패는 무시 */ }
+  }
+
+  const rules = composeRules({ stack: resolvedStack, profile, preset })
 
   const writes: Array<{ file: string; content: string; skip: boolean }> = [
     { file: 'CLAUDE.md', content: rules.claudeMd, skip: resolvedStack.hasClaude },
