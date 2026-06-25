@@ -2,6 +2,11 @@
   "name": "ai-workspace-configurator",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/been2531/ai-workspace-configurator.git"
+  },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "turbo run build",

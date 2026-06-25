@@ -2,6 +2,14 @@
   "name": "@ai-workspace-configurator/cli",
   "version": "0.1.0",
   "description": "AI Workspace Configurator CLI — CLAUDE.md / AGENTS.md / .cursorrules 자동 생성",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/been2531/ai-workspace-configurator.git",
+    "directory": "apps/cli"
+  },
+  "homepage": "https://github.com/been2531/ai-workspace-configurator#readme",
+  "keywords": ["claude-code", "ai", "codex", "cursor", "mcp", "workspace", "generator"],
   "bin": {
     "ai-workspace": "./dist/index.js"
   },

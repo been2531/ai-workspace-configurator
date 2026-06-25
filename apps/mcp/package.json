@@ -2,6 +2,13 @@
   "name": "@ai-workspace-configurator/mcp",
   "version": "0.1.0",
   "description": "AI Workspace Configurator MCP Server — Claude Code 네이티브 통합",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/been2531/ai-workspace-configurator.git",
+    "directory": "apps/mcp"
+  },
+  "keywords": ["mcp", "claude-code", "ai-workspace", "model-context-protocol"],
   "bin": {
     "ai-workspace-mcp": "./dist/index.js"
   },
