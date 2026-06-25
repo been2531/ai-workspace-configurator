@@ -1,27 +1,13 @@
-import type { DetectedStack } from '../types'
+import type { ComposeInput } from '../types'
 
-export function buildCursorRules(stack: DetectedStack): string {
-  const ignorePatterns = buildIgnorePatterns(stack)
+export function buildCursorRules({ stack }: ComposeInput): string {
+  return `${buildIgnorePatterns(stack)}
 
-  return `# .cursorrules — Codex 토큰 다이어트 (Auto-generated)
-# 불필요한 파일을 컨텍스트에서 제외하여 토큰 낭비를 방지합니다.
-
-## 핵심 아키텍처
-- 언어: ${stack.language}
-- 프레임워크: ${stack.frameworks.join(', ') || '없음'}
-
-## 컨텍스트 제외 패턴
-${ignorePatterns}
-
-## 인라인 완성 규칙
-- 함수 시그니처와 반환 타입을 항상 명시.
-- 주석은 WHY만. WHAT은 코드 자체가 설명.
-- 테스트 파일에서는 describe/it/expect 패턴 유지.
-`
+${buildArchitectureHints(stack)}`
 }
 
-function buildIgnorePatterns(stack: DetectedStack): string {
-  const base = [
+function buildIgnorePatterns({ language, frameworks, manifests }: ComposeInput['stack']): string {
+  const patterns = [
     'node_modules/**',
     'dist/**',
     'build/**',
@@ -31,11 +17,34 @@ function buildIgnorePatterns(stack: DetectedStack): string {
     'coverage/**',
   ]
 
-  if (stack.frameworks.includes('Next.js')) base.push('.next/**')
-  if (stack.manifests.includes('package.json')) base.push('package-lock.json', 'pnpm-lock.yaml')
-  if (stack.language === 'Python') base.push('__pycache__/**', '*.pyc', '.venv/**', 'venv/**')
-  if (stack.language === 'Java') base.push('target/**', '*.class')
-  if (stack.language === 'Go') base.push('vendor/**')
+  if (frameworks.includes('Next.js')) patterns.push('.next/**', 'out/**')
+  if (manifests.includes('package.json')) patterns.push('package-lock.json', 'pnpm-lock.yaml', 'yarn.lock')
+  if (language === 'Python') patterns.push('__pycache__/**', '*.pyc', '.venv/**', 'venv/**', '.pytest_cache/**')
+  if (language === 'Java') patterns.push('target/**', '*.class', '.gradle/**')
+  if (language === 'Rust') patterns.push('target/**')
+  if (language === 'Go') patterns.push('vendor/**')
 
-  return base.map((p) => `- ${p}`).join('\n')
+  return patterns.map((p) => `!${p}`).join('\n')
+}
+
+function buildArchitectureHints({ language, frameworks }: ComposeInput['stack']): string {
+  const hints: string[] = [
+    `# Stack: ${language}${frameworks.length ? ` / ${frameworks.join(', ')}` : ''}`,
+    '# Rules: no any types, pure functions preferred, side-effects at boundaries',
+  ]
+
+  if (frameworks.includes('Next.js')) {
+    hints.push('# Next.js: Server Components default, Client only when needed (state/events)')
+  }
+  if (frameworks.includes('React')) {
+    hints.push('# React: functional components + hooks only, custom hooks for business logic')
+  }
+  if (frameworks.includes('NestJS')) {
+    hints.push('# NestJS: business logic in services, controllers handle HTTP only')
+  }
+  if (language === 'Python') {
+    hints.push('# Python: type hints required, dataclasses/pydantic for data models')
+  }
+
+  return hints.join('\n')
 }

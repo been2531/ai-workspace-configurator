@@ -40,9 +40,17 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   )
 
-  // 워크스페이스 열릴 때 자동 감지
+  // 워크스페이스 열릴 때 사용자에게 제안만 (자동 실행 금지)
   if (vscode.workspace.workspaceFolders?.length) {
-    vscode.commands.executeCommand('aiWorkspace.configure')
+    vscode.window.showInformationMessage(
+      'AI Workspace Configurator: Claude Code / Codex 최적화 파일을 생성할까요?',
+      '⚡ 지금 생성',
+      '나중에',
+    ).then((choice) => {
+      if (choice === '⚡ 지금 생성') {
+        vscode.commands.executeCommand('aiWorkspace.configure')
+      }
+    })
   }
 }
 
