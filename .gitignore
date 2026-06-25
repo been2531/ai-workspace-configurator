@@ -11,3 +11,7 @@ out/
 *.json.secret
 *firebase-adminsdk*.json
 service-account.json
+
+# scripts/ 는 pnpm workspace 외부 — lock 파일 / node_modules 는 로컬 전용
+scripts/package-lock.json
+scripts/node_modules/
