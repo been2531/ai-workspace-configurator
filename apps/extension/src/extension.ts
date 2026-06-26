@@ -114,12 +114,15 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('aiWorkspace.sidebarView', panelManager, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+
     vscode.commands.registerCommand('aiWorkspace.configure', runConfigure),
 
     vscode.commands.registerCommand('aiWorkspace.openPanel', () => {
       panelManager.show()
     }),
-
   )
 
   // Handle webview messages that need extension-level access

@@ -32,6 +32,24 @@
   "activationEvents": ["onStartupFinished"],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aiWorkspace",
+          "title": "AI Workspace Configurator",
+          "icon": "icon-activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "aiWorkspace": [
+        {
+          "type": "webview",
+          "id": "aiWorkspace.sidebarView",
+          "name": "AI Workspace Configurator"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "aiWorkspace.configure",

@@ -7,8 +7,8 @@ import type { WebviewMessage, FileStatus } from '@ai-workspace-configurator/core
 
 type MessageHandler = (msg: WebviewMessage) => void
 
-export class PanelManager {
-  private panel: vscode.WebviewPanel | undefined
+export class PanelManager implements vscode.WebviewViewProvider {
+  private view: vscode.WebviewView | undefined
   private readonly context: vscode.ExtensionContext
   private messageHandler: MessageHandler | undefined
 
@@ -20,28 +20,24 @@ export class PanelManager {
     this.messageHandler = handler
   }
 
-  show() {
-    if (this.panel) {
-      this.panel.reveal()
-      return
+  // Called by VS Code when the sidebar view becomes visible
+  resolveWebviewView(
+    webviewView: vscode.WebviewView,
+    _resolveContext: vscode.WebviewViewResolveContext,
+    _token: vscode.CancellationToken,
+  ): void {
+    this.view = webviewView
+
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [
+        vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
+      ],
     }
 
-    this.panel = vscode.window.createWebviewPanel(
-      'aiWorkspacePanel',
-      'AI Workspace Configurator',
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [
-          vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
-        ],
-      },
-    )
+    webviewView.webview.html = this.getHtml(webviewView.webview)
 
-    this.panel.webview.html = this.getHtml()
-
-    this.panel.webview.onDidReceiveMessage(
+    webviewView.webview.onDidReceiveMessage(
       async (message: WebviewMessage) => {
         if (message.command === 'ready') {
           await this.sendInitState()
@@ -61,11 +57,20 @@ export class PanelManager {
       this.context.subscriptions,
     )
 
-    this.panel.onDidDispose(() => { this.panel = undefined }, null, this.context.subscriptions)
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        void this.sendInitState()
+      }
+    })
+  }
+
+  // Focus the Activity Bar sidebar view
+  show(): void {
+    vscode.commands.executeCommand('aiWorkspace.sidebarView.focus')
   }
 
   postMessage(message: unknown): void {
-    this.panel?.webview.postMessage(message)
+    this.view?.webview.postMessage(message)
   }
 
   private async sendInitState(): Promise<void> {
@@ -126,8 +131,7 @@ export class PanelManager {
     this.postMessage({ type: 'presetApplied', payload: { id: preset.id, name: preset.name } })
   }
 
-  private getHtml(): string {
-    const webview = this.panel!.webview
+  private getHtml(webview: vscode.Webview): string {
     const webviewDir = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview')
     const htmlPath = path.join(webviewDir.fsPath, 'index.html')
 
@@ -142,7 +146,7 @@ export class PanelManager {
         .replace(/src="\/webview\.js"/, `src="${scriptUri}" nonce="${nonce}"`)
         .replace(/href="\/webview\.css"/, `href="${cssUri}"`)
 
-      const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">`
+      const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:; connect-src https://api.github.com;">`
       html = html.replace('<head>', `<head>\n  ${csp}`)
 
       return html
@@ -164,7 +168,7 @@ export class PanelManager {
     body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 24px; }
     h1 { font-size: 18px; margin-bottom: 4px; }
     p { font-size: 12px; opacity: 0.6; margin-bottom: 24px; }
-    button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); margin-right: 8px; }
+    button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
     button:hover { background: var(--vscode-button-hoverBackground); }
   </style>
 </head>
