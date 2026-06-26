@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1 — 2026-06-26
+
+### Added
+- **Activity Bar icon**: A lightning bolt icon now appears in the VS Code Activity Bar (left sidebar). Click it to open the AI Workspace panel directly — no need to use the Command Palette.
+- The panel now lives in the sidebar (WebviewViewProvider) instead of a floating tab, and retains state when switching away.
+
 ## 0.7.0 — 2026-06-26
 
 ### Added
