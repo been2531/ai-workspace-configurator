@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0 — 2026-06-26
+
+### Added
+- **GitHub-based preset discovery**: The Presets tab now fetches real community presets from GitHub repositories (topic: `cursorrules`, `claude-code`, `ai-rules`), sorted by GitHub star count. Selecting a GitHub preset automatically pulls `.cursorrules`, `CLAUDE.md`, and `AGENTS.md` from that repository.
+- **VS Code debug config**: Added `.vscode/launch.json` and `tasks.json` for F5 Extension Development Host support.
+
+### Improved
+- Presets tab redesigned with **Built-in** / **GitHub ★** sections — GitHub stars replace the previous empty Firebase community system.
+- Selecting a GitHub preset shows an optimistic loading indicator while files are fetched.
+- Config file list on Home tab now shows a one-line description for each file (CLAUDE.md, AGENTS.md, .cursorrules, .mcp.json, skills).
+- Built-in preset descriptions unified to English (fixes Korean text showing in EN mode).
+
+### Removed
+- **Team Sync** feature removed — config files are committed to git and synced naturally via version control.
+- Firebase community preset system removed (replaced by GitHub).
+
 ## 0.6.0 — 2026-06-26
 
 ### Added
