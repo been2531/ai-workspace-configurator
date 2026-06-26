@@ -66,6 +66,16 @@ export async function handleInit(args: Record<string, unknown>): Promise<string>
     created.push(file)
   }
 
+  // Write .cursor/rules/project.mdc (Cursor's new format)
+  if (!force && stack.hasCursorMdc) {
+    skipped.push('.cursor/rules/project.mdc')
+  } else {
+    const cursorRulesDir = path.join(root, '.cursor', 'rules')
+    fs.mkdirSync(cursorRulesDir, { recursive: true })
+    fs.writeFileSync(path.join(cursorRulesDir, 'project.mdc'), rules.cursorMdc, 'utf-8')
+    created.push('.cursor/rules/project.mdc')
+  }
+
   // 요약 출력
   const lines = [
     `✅ AI Workspace 설정 완료`,

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — 2026-06-26
+
+### Added
+- **Cursor MDC support**: Now generates `.cursor/rules/project.mdc` in addition to `.cursorrules`, matching Cursor's new recommended format. The `.mdc` file includes proper frontmatter (`description`, `alwaysApply: true`) and the same stack-aware rules as `.cursorrules`.
+- **GitHub Actions auto-publish**: On `v*.*.*` tag push, the workflow builds and publishes to VS Code Marketplace automatically (requires `VSCE_PAT` secret in repo settings).
+
+### Improved
+- Stack detection in extension, CLI, and MCP now reports `hasCursorMdc` so existing `.cursor/rules/` directories are respected and not overwritten.
+
 ## 0.5.0 — 2026-06-26
 
 ### Added

@@ -10,6 +10,7 @@ export interface DetectedStack {
   packageManager: 'npm' | 'pnpm' | 'yarn' | 'unknown'
   hasClaude: boolean
   hasCursor: boolean
+  hasCursorMdc: boolean
   hasMcp: boolean
   hasAgents: boolean
   hasSkills: boolean
@@ -84,6 +85,7 @@ export interface GeneratedRules {
   claudeMd: string
   agentsMd: string
   cursorRules: string
+  cursorMdc: string
   mcpConfig: McpConfig
   skills: Record<string, string>
 }
@@ -135,6 +137,7 @@ export interface GeneratedPreview {
   claudeMd: string
   agentsMd: string
   cursorRules: string
+  cursorMdc: string
   mcpConfig: string
   skills: Record<string, string>
 }

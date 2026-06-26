@@ -33,6 +33,17 @@ export async function generateWorkspaceFiles(
     }
   }
 
+  // Write .cursor/rules/project.mdc (Cursor's new format, replaces .cursorrules)
+  if (!stack.hasCursorMdc) {
+    const cursorRulesDir = path.join(workspaceRoot, '.cursor', 'rules')
+    try {
+      fs.mkdirSync(cursorRulesDir, { recursive: true })
+      fs.writeFileSync(path.join(cursorRulesDir, 'project.mdc'), rules.cursorMdc, 'utf-8')
+    } catch (err) {
+      throw new Error(`Failed to write .cursor/rules/project.mdc: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   // Write .claude/skills/ only if the directory does not already exist
   if (!stack.hasSkills && Object.keys(rules.skills).length > 0) {
     const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
@@ -50,6 +61,7 @@ export async function generateWorkspaceFiles(
     claudeMd: rules.claudeMd,
     agentsMd: rules.agentsMd,
     cursorRules: rules.cursorRules,
+    cursorMdc: rules.cursorMdc,
     mcpConfig: mcpJson,
     skills: rules.skills,
   }

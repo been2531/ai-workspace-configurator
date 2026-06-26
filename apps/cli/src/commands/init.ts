@@ -61,6 +61,16 @@ export async function initCommand(targetDir: string): Promise<void> {
     created.push(file)
   }
 
+  // Write .cursor/rules/project.mdc (Cursor's new format)
+  if (!resolvedStack.hasCursorMdc) {
+    const cursorRulesDir = path.join(workspaceRoot, '.cursor', 'rules')
+    fs.mkdirSync(cursorRulesDir, { recursive: true })
+    fs.writeFileSync(path.join(cursorRulesDir, 'project.mdc'), rules.cursorMdc, 'utf-8')
+    created.push('.cursor/rules/project.mdc')
+  } else {
+    skipped.push('.cursor/rules/project.mdc')
+  }
+
   if (created.length > 0) {
     p.note(created.map((f) => `✓ ${f}`).join('\n'), '생성된 파일')
   }

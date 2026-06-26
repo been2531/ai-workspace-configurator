@@ -31,6 +31,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
       packageManager: 'unknown',
       hasClaude: false,
       hasCursor: false,
+      hasCursorMdc: false,
       hasMcp: false,
       hasAgents: false,
       hasSkills: false,
@@ -187,6 +188,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
   const language = detectLanguage(workspaceRoot, foundManifests)
   const hasClaude = fs.existsSync(path.join(workspaceRoot, 'CLAUDE.md'))
   const hasCursor = fs.existsSync(path.join(workspaceRoot, '.cursorrules'))
+  const hasCursorMdc = detectCursorMdcDir(workspaceRoot)
   const hasMcp = fs.existsSync(path.join(workspaceRoot, '.mcp.json'))
   const hasAgents = fs.existsSync(path.join(workspaceRoot, 'AGENTS.md'))
   const hasSkills = detectSkillsDir(workspaceRoot)
@@ -201,6 +203,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
     packageManager,
     hasClaude,
     hasCursor,
+    hasCursorMdc,
     hasMcp,
     hasAgents,
     hasSkills,
@@ -236,6 +239,16 @@ function detectSkillsDir(workspaceRoot: string): boolean {
   if (!fs.existsSync(skillsDir)) return false
   try {
     return fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+  } catch {
+    return false
+  }
+}
+
+function detectCursorMdcDir(workspaceRoot: string): boolean {
+  const rulesDir = path.join(workspaceRoot, '.cursor', 'rules')
+  if (!fs.existsSync(rulesDir)) return false
+  try {
+    return fs.readdirSync(rulesDir).some((f) => f.endsWith('.mdc'))
   } catch {
     return false
   }
