@@ -1,0 +1,17 @@
+# Source files — all code is bundled into dist/extension.js
+src/**
+node_modules/**
+
+# Build tooling
+esbuild.cjs
+create-icon.cjs
+tsconfig.json
+pnpm-lock.yaml
+.pnpmfile.cjs
+
+# Dev artifacts
+.vscode/**
+.turbo/**
+**/*.map
+**/.gitignore
+**/.eslintrc*

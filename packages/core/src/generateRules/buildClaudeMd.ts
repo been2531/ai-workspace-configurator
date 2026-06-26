@@ -1,77 +1,84 @@
 import type { ComposeInput } from '../types'
+import { getLocaleStrings } from '../i18n'
+import type { GeneratedLocale } from '../i18n'
 
 export function buildClaudeMd({ stack, profile }: ComposeInput): string {
+  const locale = profile?.generatedLocale ?? 'en'
+  const L = getLocaleStrings(locale).claude
   const { language, frameworks, packageManager } = stack
-  const fw = frameworks.join(', ') || language
+  const fw = frameworks.join(', ') || L.noFw
 
   const typeRule =
     profile?.codingStyle.typeStrictness === 'strict'
-      ? '- `any` 금지. 불확실한 타입은 `unknown` + narrowing.'
+      ? L.typeStrict
       : profile?.codingStyle.typeStrictness === 'moderate'
-        ? '- `any`는 외부 API 경계에서만 허용.'
-        : '- 타입은 필요한 곳에 명시.'
+        ? L.typeMod
+        : L.typeLoose
 
   const paradigmRule =
     profile?.codingStyle.paradigm === 'functional'
-      ? '- 순수 함수 우선. 사이드이펙트는 경계로 격리.'
+      ? L.pdgmFunctional
       : profile?.codingStyle.paradigm === 'oop'
-        ? '- 클래스 기반 캡슐화. 단일 책임 원칙.'
-        : '- 함수형/OOP 혼용. 컨텍스트에 맞게 선택.'
+        ? L.pdgmOop
+        : L.pdgmMixed
 
   const commentRule =
     profile?.codingStyle.commentStyle === 'none'
-      ? '- 주석 금지. 코드가 스스로 설명하게.'
+      ? L.cmntNone
       : profile?.codingStyle.commentStyle === 'jsdoc'
-        ? '- public API는 JSDoc 필수. 내부 로직은 WHY만.'
-        : '- 주석은 WHY만. WHAT은 코드 자체가 설명.'
+        ? L.cmntJsdoc
+        : L.cmntMinimal
 
-  return `# 프로젝트 가이드라인
+  return `${L.title}
 
-## 기술 스택
-- **언어**: ${language}
-- **프레임워크**: ${fw || '미감지'}
-- **패키지 매니저**: ${packageManager}
+${L.techStack}
+- ${L.labelLang}: ${language}
+- ${L.labelFw}: ${fw}
+- ${L.labelPm}: ${packageManager}
 
-## 빌드 명령어
-${buildCommands(stack)}
+${L.buildCmds}
+${buildCommands(stack, L)}
 
-## 코드 규칙
+${L.codeRules}
 
-### 타이핑
+${L.typing}
 ${typeRule}
-- 모든 public API 타입은 명시적으로 정의.
+${L.typingPublicApi}
 
-### 패러다임
+${L.paradigm}
 ${paradigmRule}
 
-### 주석
+${L.commentsSection}
 ${commentRule}
 
-### 보안
-- API 키는 환경변수로만. 코드 하드코딩 절대 금지.
-- 사용자 입력은 시스템 경계에서만 검증.
-${frameworkRules(stack)}
+${L.security}
+${L.secApiKey}
+${L.secUserInput}
+${frameworkRules(stack, L)}
 `
 }
 
-function buildCommands({ manifests, frameworks, packageManager }: ComposeInput['stack']): string {
+function buildCommands(
+  { manifests, frameworks, packageManager }: ComposeInput['stack'],
+  L: GeneratedLocale['claude'],
+): string {
   const pm = packageManager === 'pnpm' ? 'pnpm' : packageManager === 'yarn' ? 'yarn' : 'npm'
 
   if (manifests.includes('package.json')) {
     const hasDev = frameworks.some((f) => ['Vite', 'Next.js', 'React', 'Vue'].includes(f))
     return `\`\`\`bash
-${hasDev ? `${pm} run dev      # 개발 서버\n` : ''}\
-${pm} run build    # 프로덕션 빌드
-${pm} run lint     # 린트
-${pm} test         # 테스트
+${hasDev ? `${pm} run dev      ${L.cmdDevServer}\n` : ''}\
+${pm} run build    ${L.cmdProdBuild}
+${pm} run lint     ${L.cmdLint}
+${pm} test         ${L.cmdTest}
 \`\`\``
   }
 
   if (manifests.includes('pom.xml')) {
     return `\`\`\`bash
-./mvnw spring-boot:run   # 개발 서버
-./mvnw package           # 빌드
-./mvnw test              # 테스트
+./mvnw spring-boot:run   ${L.cmdDevServer}
+./mvnw package           ${L.cmdBuild}
+./mvnw test              ${L.cmdTest}
 \`\`\``
   }
 
@@ -80,81 +87,79 @@ ${pm} test         # 테스트
     manifests.includes('pyproject.toml') ||
     manifests.includes('Pipfile')
   ) {
-    const isDjango = frameworks.includes('Django')
-    const isFastApi = frameworks.includes('FastAPI')
-    if (isDjango) {
+    if (frameworks.includes('Django')) {
       return `\`\`\`bash
-python manage.py runserver   # 개발 서버
-python manage.py test        # 테스트
+python manage.py runserver   ${L.cmdDevServer}
+python manage.py test        ${L.cmdTest}
 \`\`\``
     }
-    if (isFastApi) {
+    if (frameworks.includes('FastAPI')) {
       return `\`\`\`bash
-uvicorn main:app --reload    # 개발 서버
-pytest                       # 테스트
+uvicorn main:app --reload    ${L.cmdDevServer}
+pytest                       ${L.cmdTest}
 \`\`\``
     }
     return `\`\`\`bash
-python -m flask run          # 개발 서버 (Flask)
-pytest                       # 테스트
+python -m flask run          ${L.cmdDevServer}
+pytest                       ${L.cmdTest}
 \`\`\``
   }
 
   if (manifests.includes('Cargo.toml')) {
     return `\`\`\`bash
-cargo run       # 실행
-cargo build     # 빌드
-cargo test      # 테스트
+cargo run       ${L.cmdRun}
+cargo build     ${L.cmdBuild}
+cargo test      ${L.cmdTest}
 \`\`\``
   }
 
   if (manifests.includes('go.mod')) {
     return `\`\`\`bash
-go run .        # 실행
-go build .      # 빌드
-go test ./...   # 테스트
+go run .        ${L.cmdRun}
+go build .      ${L.cmdBuild}
+go test ./...   ${L.cmdTest}
 \`\`\``
   }
 
-  return '빌드 명령어를 직접 입력해주세요.'
+  return L.enterManually
 }
 
-function frameworkRules({ frameworks }: ComposeInput['stack']): string {
+function frameworkRules(
+  { frameworks }: ComposeInput['stack'],
+  L: GeneratedLocale['claude'],
+): string {
   const rules: string[] = []
 
   if (frameworks.includes('Next.js')) {
-    rules.push(
-      '\n### Next.js\n- Server / Client Component 경계를 명확히.\n- 환경변수는 `NEXT_PUBLIC_` 규칙 준수.\n- 데이터 페칭은 Server Component 우선.',
-    )
+    rules.push(`\n${L.fwNextjs.title}\n${L.fwNextjs.rules}`)
   } else if (frameworks.includes('React')) {
-    rules.push(
-      '\n### React\n- 함수형 컴포넌트 + Hooks만 사용.\n- 사이드이펙트는 `useEffect`로 격리.\n- 150줄 초과 컴포넌트는 분리.',
-    )
+    rules.push(`\n${L.fwReact.title}\n${L.fwReact.rules}`)
   }
 
   if (frameworks.includes('Vue')) {
-    rules.push(
-      '\n### Vue\n- Composition API 사용.\n- `<script setup>` 권장.',
-    )
+    rules.push(`\n${L.fwVue.title}\n${L.fwVue.rules}`)
   }
 
   if (frameworks.includes('NestJS')) {
-    rules.push(
-      '\n### NestJS\n- 모듈 단위 캡슐화.\n- 서비스 레이어에서만 비즈니스 로직.',
-    )
+    rules.push(`\n${L.fwNestjs.title}\n${L.fwNestjs.rules}`)
   }
 
   if (frameworks.includes('Firebase')) {
-    rules.push(
-      '\n### Firebase\n- SDK 직접 호출은 `services/firebase.ts`에서만.\n- 컴포넌트에서 직접 호출 금지.',
-    )
+    rules.push(`\n${L.fwFirebase.title}\n${L.fwFirebase.rules}`)
+  }
+
+  if (frameworks.includes('Django')) {
+    rules.push(`\n${L.fwDjango.title}\n${L.fwDjango.rules}`)
+  }
+
+  if (frameworks.includes('FastAPI')) {
+    rules.push(`\n${L.fwFastApi.title}\n${L.fwFastApi.rules}`)
   }
 
   if (frameworks.includes('Prisma') || frameworks.includes('Drizzle')) {
     const orm = frameworks.includes('Prisma') ? 'Prisma' : 'Drizzle'
-    rules.push(
-      `\n### ${orm}\n- DB 접근은 전용 repository 레이어로 격리.\n- 마이그레이션 파일은 직접 편집 금지.`,
-    )
+    const title = L.orm.title.replace('{orm}', orm)
+    rules.push(`\n${title}\n${L.orm.rules}`)
   }
 
   return rules.join('\n')

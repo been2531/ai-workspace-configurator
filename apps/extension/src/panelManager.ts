@@ -1,13 +1,23 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
+import { getProfile, getSelectedPreset, saveSelectedPreset } from './profileStore'
+import { searchPresets, loadPreset } from './presetService'
+import type { WebviewMessage, FileStatus } from '@ai-workspace-configurator/core'
+
+type MessageHandler = (msg: WebviewMessage) => void
 
 export class PanelManager {
   private panel: vscode.WebviewPanel | undefined
   private readonly context: vscode.ExtensionContext
+  private messageHandler: MessageHandler | undefined
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context
+  }
+
+  onMessage(handler: MessageHandler): void {
+    this.messageHandler = handler
   }
 
   show() {
@@ -32,15 +42,20 @@ export class PanelManager {
     this.panel.webview.html = this.getHtml()
 
     this.panel.webview.onDidReceiveMessage(
-      (message: { command: string }) => {
-        switch (message.command) {
-          case 'configure':
-            vscode.commands.executeCommand('aiWorkspace.configure')
-            break
-          case 'syncTeam':
-            vscode.commands.executeCommand('aiWorkspace.syncTeam')
-            break
+      async (message: WebviewMessage) => {
+        if (message.command === 'ready') {
+          await this.sendInitState()
+          return
         }
+        if (message.command === 'searchPresets') {
+          await this.handleSearchPresets(message.query)
+          return
+        }
+        if (message.command === 'selectPreset') {
+          await this.handleSelectPreset(message.presetId)
+          return
+        }
+        this.messageHandler?.(message)
       },
       undefined,
       this.context.subscriptions,
@@ -49,16 +64,76 @@ export class PanelManager {
     this.panel.onDidDispose(() => { this.panel = undefined }, null, this.context.subscriptions)
   }
 
+  postMessage(message: unknown): void {
+    this.panel?.webview.postMessage(message)
+  }
+
+  private async sendInitState(): Promise<void> {
+    const profile = getProfile(this.context)
+    const selectedPreset = getSelectedPreset(this.context)
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+    const skillsDir = workspaceRoot ? path.join(workspaceRoot, '.claude', 'skills') : ''
+    const fileStatus: FileStatus = workspaceRoot
+      ? {
+          claude: fs.existsSync(path.join(workspaceRoot, 'CLAUDE.md')),
+          agents: fs.existsSync(path.join(workspaceRoot, 'AGENTS.md')),
+          cursor: fs.existsSync(path.join(workspaceRoot, '.cursorrules')),
+          mcp: fs.existsSync(path.join(workspaceRoot, '.mcp.json')),
+          skills: (() => {
+            try {
+              return fs.existsSync(skillsDir) &&
+                fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+            } catch { return false }
+          })(),
+        }
+      : { claude: false, agents: false, cursor: false, mcp: false, skills: false }
+
+    this.postMessage({
+      type: 'init',
+      payload: {
+        profile,
+        fileStatus,
+        selectedPreset: selectedPreset
+          ? { id: selectedPreset.id, name: selectedPreset.name }
+          : null,
+      },
+    })
+  }
+
+  private async handleSearchPresets(query: string): Promise<void> {
+    try {
+      const results = await searchPresets(query)
+      this.postMessage({ type: 'presetsResult', payload: results })
+    } catch {
+      this.postMessage({ type: 'presetsResult', payload: [] })
+    }
+  }
+
+  private async handleSelectPreset(presetId: string | null): Promise<void> {
+    if (!presetId) {
+      await saveSelectedPreset(this.context, null)
+      this.postMessage({ type: 'presetApplied', payload: null })
+      return
+    }
+
+    const preset = await loadPreset(presetId)
+    if (!preset) {
+      this.postMessage({ type: 'presetApplied', payload: null })
+      return
+    }
+
+    await saveSelectedPreset(this.context, preset)
+    this.postMessage({ type: 'presetApplied', payload: { id: preset.id, name: preset.name } })
+  }
+
   private getHtml(): string {
     const webview = this.panel!.webview
     const webviewDir = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview')
     const htmlPath = path.join(webviewDir.fsPath, 'index.html')
 
-    // React 빌드 결과물이 있으면 사용, 없으면 폴백 UI
     if (fs.existsSync(htmlPath)) {
       let html = fs.readFileSync(htmlPath, 'utf-8')
 
-      // Vite 빌드는 절대 경로(/webview.js)를 사용 — webview URI로 교체
       const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'webview.js'))
       const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'webview.css'))
       const nonce = getNonce()
@@ -67,20 +142,20 @@ export class PanelManager {
         .replace(/src="\/webview\.js"/, `src="${scriptUri}" nonce="${nonce}"`)
         .replace(/href="\/webview\.css"/, `href="${cssUri}"`)
 
-      // CSP: module script는 nonce 필수
       const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;">`
       html = html.replace('<head>', `<head>\n  ${csp}`)
 
       return html
     }
 
-    // 폴백: 인라인 UI
     return this.getFallbackHtml()
   }
 
   private getFallbackHtml(): string {
+    const profile = getProfile(this.context)
+    const isKo = profile.locale === 'ko'
     return `<!DOCTYPE html>
-<html lang="ko">
+<html lang="${isKo ? 'ko' : 'en'}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -95,9 +170,9 @@ export class PanelManager {
 </head>
 <body>
   <h1>AI Workspace Configurator</h1>
-  <p>프로젝트 스택을 감지하고 Claude Code / Codex 최적화 파일을 자동 생성합니다.</p>
-  <button onclick="configure()">⚡ 지금 설정 생성</button>
-  <button onclick="syncTeam()">☁️ 팀 동기화 (Pro)</button>
+  <p>${isKo ? '프로젝트 스택을 감지하고 Claude Code / Codex 최적화 파일을 자동 생성합니다.' : 'Auto-generate optimization files for Claude Code & Codex.'}</p>
+  <button onclick="configure()">${isKo ? '⚡ 지금 설정 생성' : '⚡ Generate Config'}</button>
+  <button onclick="syncTeam()">☁ ${isKo ? '팀 동기화' : 'Team Sync'} (Pro)</button>
   <script>
     const vscode = acquireVsCodeApi()
     function configure() { vscode.postMessage({ command: 'configure' }) }
@@ -109,10 +184,6 @@ export class PanelManager {
 }
 
 function getNonce(): string {
-  let text = ''
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length))
-  }
-  return text
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  return Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }

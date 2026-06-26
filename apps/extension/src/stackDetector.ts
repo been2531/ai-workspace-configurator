@@ -30,6 +30,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
       hasCursor: false,
       hasMcp: false,
       hasAgents: false,
+      hasSkills: false,
       confidence: 'empty',
       ambiguities: [],
     }
@@ -112,6 +113,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
   const hasCursor = fs.existsSync(path.join(workspaceRoot, '.cursorrules'))
   const hasMcp = fs.existsSync(path.join(workspaceRoot, '.mcp.json'))
   const hasAgents = fs.existsSync(path.join(workspaceRoot, 'AGENTS.md'))
+  const hasSkills = detectSkillsDir(workspaceRoot)
   const packageManager = detectPackageManager(workspaceRoot)
 
   const confidence =
@@ -126,6 +128,7 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
     hasCursor,
     hasMcp,
     hasAgents,
+    hasSkills,
     confidence,
     ambiguities,
   }
@@ -154,6 +157,16 @@ function detectPackageManager(
   if (fs.existsSync(path.join(workspaceRoot, 'yarn.lock'))) return 'yarn'
   if (fs.existsSync(path.join(workspaceRoot, 'package-lock.json'))) return 'npm'
   return 'unknown'
+}
+
+function detectSkillsDir(workspaceRoot: string): boolean {
+  const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
+  if (!fs.existsSync(skillsDir)) return false
+  try {
+    return fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+  } catch {
+    return false
+  }
 }
 
 function readJson<T>(filePath: string): T | null {

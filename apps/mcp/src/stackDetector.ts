@@ -15,7 +15,7 @@ export function detectStack(root: string): DetectedStack {
     return {
       language: 'Unknown', frameworks: [], manifests: [],
       packageManager: 'unknown', hasClaude: false, hasCursor: false,
-      hasMcp: false, hasAgents: false, confidence: 'empty', ambiguities: [],
+      hasMcp: false, hasAgents: false, hasSkills: false, confidence: 'empty', ambiguities: [],
     }
   }
 
@@ -70,6 +70,7 @@ export function detectStack(root: string): DetectedStack {
     hasCursor: fs.existsSync(path.join(root, '.cursorrules')),
     hasMcp: fs.existsSync(path.join(root, '.mcp.json')),
     hasAgents: fs.existsSync(path.join(root, 'AGENTS.md')),
+    hasSkills: detectSkillsDir(root),
     confidence, ambiguities,
   }
 }
@@ -90,6 +91,11 @@ function detectPm(root: string): 'npm' | 'pnpm' | 'yarn' | 'unknown' {
   if (fs.existsSync(path.join(root, 'yarn.lock'))) return 'yarn'
   if (fs.existsSync(path.join(root, 'package-lock.json'))) return 'npm'
   return 'unknown'
+}
+
+function detectSkillsDir(root: string): boolean {
+  const dir = path.join(root, '.claude', 'skills')
+  try { return fs.existsSync(dir) && fs.readdirSync(dir).some((f) => f.endsWith('.md')) } catch { return false }
 }
 
 function readJson<T>(p: string): T | null {

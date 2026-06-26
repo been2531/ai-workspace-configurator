@@ -64,6 +64,8 @@ export async function profileCommand(): Promise<void> {
 
   const profile: UserProfile = {
     version: '1',
+    locale: 'en',
+    generatedLocale: 'en',
     codingStyle: {
       typeStrictness: typeStrictness as UserProfile['codingStyle']['typeStrictness'],
       paradigm: paradigm as UserProfile['codingStyle']['paradigm'],

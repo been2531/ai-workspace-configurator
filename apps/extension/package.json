@@ -1,26 +1,49 @@
 {
-  "name": "extension",
+  "name": "ai-workspace-configurator",
   "displayName": "AI Workspace Configurator",
-  "description": "Claude Code & Codex 성능을 극대화하는 AI 개발 환경 자동 설정 도구",
+  "description": "Auto-generate Claude Code & Codex optimization files (CLAUDE.md, AGENTS.md, .cursorrules, MCP config, slash commands) by detecting your project stack.",
   "version": "0.1.0",
   "publisher": "ai-workspace-configurator",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/been2531/ai-workspace-configurator.git",
+    "directory": "apps/extension"
+  },
+  "keywords": [
+    "claude-code",
+    "ai",
+    "codex",
+    "agents",
+    "mcp",
+    "automation",
+    "workspace",
+    "claude",
+    "anthropic",
+    "openai"
+  ],
   "engines": { "vscode": "^1.90.0" },
-  "categories": ["Other", "Programming Languages"],
+  "categories": ["AI", "Other", "Programming Languages"],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#13112a",
+    "theme": "dark"
+  },
   "activationEvents": ["onStartupFinished"],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "aiWorkspace.configure",
-        "title": "AI Workspace: 프로젝트 설정 생성"
+        "title": "AI Workspace: Generate Config Files"
       },
       {
         "command": "aiWorkspace.openPanel",
-        "title": "AI Workspace: 대시보드 열기"
+        "title": "AI Workspace: Open Dashboard"
       },
       {
         "command": "aiWorkspace.syncTeam",
-        "title": "AI Workspace: 팀 설정 동기화"
+        "title": "AI Workspace: Team Sync (Pro)"
       }
     ],
     "menus": {
@@ -32,17 +55,24 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "vscode:prepublish": "node esbuild.cjs",
+    "build": "node esbuild.cjs",
+    "dev": "node esbuild.cjs --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
+    "package": "vsce package --no-dependencies",
+    "publish-ext": "vsce publish --no-dependencies",
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@ai-workspace-configurator/core": "workspace:*"
+    "@ai-workspace-configurator/core": "workspace:*",
+    "firebase": "^10.12.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.21.0",
     "rimraf": "^5.0.0",
     "typescript": "^5.4.0"
   }

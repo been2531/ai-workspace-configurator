@@ -18,7 +18,7 @@ export function detectStack(workspaceRoot: string): DetectedStack {
     return {
       language: 'Unknown', frameworks: [], manifests: [],
       packageManager: 'unknown', hasClaude: false, hasCursor: false,
-      hasMcp: false, hasAgents: false, confidence: 'empty', ambiguities: [],
+      hasMcp: false, hasAgents: false, hasSkills: false, confidence: 'empty', ambiguities: [],
     }
   }
 
@@ -87,6 +87,7 @@ export function detectStack(workspaceRoot: string): DetectedStack {
     hasCursor: fs.existsSync(path.join(workspaceRoot, '.cursorrules')),
     hasMcp: fs.existsSync(path.join(workspaceRoot, '.mcp.json')),
     hasAgents: fs.existsSync(path.join(workspaceRoot, 'AGENTS.md')),
+    hasSkills: detectSkillsDir(workspaceRoot),
     confidence, ambiguities,
   }
 }
@@ -107,6 +108,11 @@ function detectPackageManager(root: string): 'npm' | 'pnpm' | 'yarn' | 'unknown'
   if (fs.existsSync(path.join(root, 'yarn.lock'))) return 'yarn'
   if (fs.existsSync(path.join(root, 'package-lock.json'))) return 'npm'
   return 'unknown'
+}
+
+function detectSkillsDir(root: string): boolean {
+  const dir = path.join(root, '.claude', 'skills')
+  try { return fs.existsSync(dir) && fs.readdirSync(dir).some((f) => f.endsWith('.md')) } catch { return false }
 }
 
 function readJson<T>(filePath: string): T | null {
