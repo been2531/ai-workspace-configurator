@@ -45,6 +45,13 @@ export interface GeneratedLocale {
     fwExpress: { title: string; rules: string }
     fwSvelte: { title: string; rules: string }
     fwNuxt: { title: string; rules: string }
+    fwRemix: { title: string; rules: string }
+    fwAstro: { title: string; rules: string }
+    fwSpringBoot: { title: string; rules: string }
+    fwLaravel: { title: string; rules: string }
+    fwRails: { title: string; rules: string }
+    fwFlutter: { title: string; rules: string }
+    fwGraphql: { title: string; rules: string }
     orm: { title: string; rules: string }
     fwDjango: { title: string; rules: string }
     fwFastApi: { title: string; rules: string }
@@ -197,6 +204,82 @@ const en: GeneratedLocale = {
         '- Server routes in `server/api/` — use `defineEventHandler` and `readBody`.',
         '- Env vars: `NUXT_PUBLIC_` for browser-safe, `NUXT_` for server-only.',
         '- Plugins in `plugins/` for global setup; middleware in `middleware/` for route guards.',
+      ].join('\n'),
+    },
+    fwRemix: {
+      title: '### Remix',
+      rules: [
+        '- `loader` for data fetching, `action` for mutations — no client-side `fetch` for these.',
+        '- Route files in `app/routes/` — one file per URL segment (file-based routing).',
+        '- Use `<Form>` component for submissions; actions handle them server-side.',
+        '- Every route can export an `ErrorBoundary` — add one for user-facing routes.',
+        '- `useLoaderData` only in the route file that owns the loader.',
+        '- Nested routes share layout via `<Outlet />` — design routes as a tree.',
+      ].join('\n'),
+    },
+    fwAstro: {
+      title: '### Astro',
+      rules: [
+        '- `.astro` files for pages/layouts; import React/Vue/Svelte components for interactive islands.',
+        '- `---` frontmatter runs server-side (build time or per-request) — keep it data-fetching only.',
+        '- Client directives (`client:load`, `client:idle`, `client:visible`) opt a component into JS.',
+        '- Zero JS shipped by default — add hydration only when the UX requires it.',
+        '- Content Collections in `src/content/` for structured Markdown/MDX content.',
+        '- Image optimization via `<Image />` from `astro:assets` — never raw `<img>` for local images.',
+      ].join('\n'),
+    },
+    fwSpringBoot: {
+      title: '### Spring Boot',
+      rules: [
+        '- Layered architecture: `@RestController` → `@Service` → `@Repository`.',
+        '- Business logic in `@Service` classes only — controllers are thin request handlers.',
+        '- Use `@Transactional` at the service layer, not on controllers.',
+        '- DTOs for all request/response objects — never expose JPA `@Entity` classes directly in APIs.',
+        '- Validate input with `@Valid` on controller parameters + Bean Validation annotations on DTOs.',
+        '- Configuration in `application.yml` — never hardcode environment-specific values.',
+      ].join('\n'),
+    },
+    fwLaravel: {
+      title: '### Laravel',
+      rules: [
+        '- Thin controllers — delegate to Service classes or single-action invokables.',
+        '- Form Requests for all input validation — never validate directly in controllers.',
+        '- Eloquent models in `app/Models/`; complex queries in repository or query classes.',
+        '- Business logic in `app/Services/` — keep models focused on relationships and scopes.',
+        '- Use `php artisan make:model -mrc` to scaffold model, migration, and resource controller together.',
+        '- `.env` for all credentials; never commit secrets to version control.',
+      ].join('\n'),
+    },
+    fwRails: {
+      title: '### Ruby on Rails',
+      rules: [
+        '- Fat models, skinny controllers — complex logic goes in service objects or concerns.',
+        '- ActiveRecord validations in models; multi-step business rules in `app/services/`.',
+        '- Strong parameters in controllers: `params.require(:model).permit(...)`.',
+        '- Prefer `has_many :through` over `has_and_belongs_to_many` for join tables with data.',
+        '- Background jobs via ActiveJob + Sidekiq/GoodJob — never block the request cycle.',
+        '- Use `rails generate` for migrations — never create migration files manually.',
+      ].join('\n'),
+    },
+    fwFlutter: {
+      title: '### Flutter',
+      rules: [
+        '- Follow the state management pattern already in the project (Riverpod, Bloc, Provider).',
+        '- Widgets stay thin — extract business logic to notifiers, cubits, or providers.',
+        '- Use `const` constructors wherever possible to reduce unnecessary rebuilds.',
+        '- Platform-specific code in `lib/src/platform/` with conditional imports or `Platform` checks.',
+        '- All assets declared in `pubspec.yaml` before reference — never hardcode asset paths.',
+        '- Run `flutter analyze` and `flutter test` before considering a task done.',
+      ].join('\n'),
+    },
+    fwGraphql: {
+      title: '### GraphQL',
+      rules: [
+        '- Schema-first: define SDL (`schema.graphql`) before writing resolvers.',
+        '- Resolvers are thin — delegate to service functions or DataLoaders.',
+        '- Use DataLoader to batch and cache DB queries per request (eliminates N+1).',
+        '- Never expose internal error details or stack traces in GraphQL error responses.',
+        '- Validate input with schema types and explicit nullable/non-nullable constraints.',
       ].join('\n'),
     },
     orm: {
@@ -391,6 +474,82 @@ const ko: GeneratedLocale = {
         '- Server Route는 `server/api/` 내 `defineEventHandler`와 `readBody`로 작성.',
         '- 환경변수: 브라우저 노출은 `NUXT_PUBLIC_`, 서버 전용은 `NUXT_`.',
         '- 전역 설정은 `plugins/`, 라우트 가드는 `middleware/`에 위치.',
+      ].join('\n'),
+    },
+    fwRemix: {
+      title: '### Remix',
+      rules: [
+        '- 데이터 로딩은 `loader`, 변경은 `action` — 클라이언트 fetch로 처리하지 말 것.',
+        '- Route 파일은 `app/routes/` — URL 세그먼트당 파일 하나 (파일 기반 라우팅).',
+        '- 폼 제출은 `<Form>` 컴포넌트 사용; 서버에서 action이 처리.',
+        '- 사용자 접근 Route마다 `ErrorBoundary` export 추가.',
+        '- `useLoaderData`는 loader를 소유한 route 파일 내에서만 사용.',
+        '- 중첩 Route는 `<Outlet />`으로 레이아웃 공유 — Route를 트리 구조로 설계.',
+      ].join('\n'),
+    },
+    fwAstro: {
+      title: '### Astro',
+      rules: [
+        '- `.astro` 파일은 페이지/레이아웃; React/Vue/Svelte 컴포넌트는 인터랙티브 island에 사용.',
+        '- `---` frontmatter는 서버 사이드 실행 (빌드 타임 또는 요청별). 데이터 페칭만 수행.',
+        '- 클라이언트 디렉티브(`client:load`, `client:idle`, `client:visible`)로 JS hydration 선택.',
+        '- 기본적으로 JS 없음 — UX에 필요한 경우에만 hydration 추가.',
+        '- 구조화된 콘텐츠는 `src/content/` Content Collections 사용.',
+        '- 이미지는 `astro:assets`의 `<Image />` 컴포넌트 사용. 로컬 이미지에 raw `<img>` 금지.',
+      ].join('\n'),
+    },
+    fwSpringBoot: {
+      title: '### Spring Boot',
+      rules: [
+        '- 레이어드 아키텍처: `@RestController` → `@Service` → `@Repository`.',
+        '- 비즈니스 로직은 `@Service` 클래스에만. Controller는 얇은 요청 핸들러.',
+        '- `@Transactional`은 Service 레이어에. Controller에 적용 금지.',
+        '- 모든 요청/응답은 DTO 사용. JPA `@Entity`를 API에 직접 노출 금지.',
+        '- Controller 파라미터에 `@Valid` + DTO에 Bean Validation 어노테이션으로 입력 검증.',
+        '- 설정은 `application.yml` 사용. 환경별 값 하드코딩 절대 금지.',
+      ].join('\n'),
+    },
+    fwLaravel: {
+      title: '### Laravel',
+      rules: [
+        '- Controller는 얇게 유지 — Service 클래스 또는 단일 Action 클래스에 위임.',
+        '- 입력 검증은 Form Request 사용. Controller 내 직접 검증 금지.',
+        '- Eloquent 모델은 `app/Models/`; 복잡한 쿼리는 Repository 또는 Query 클래스.',
+        '- 비즈니스 로직은 `app/Services/`. 모델은 관계와 스코프에 집중.',
+        '- `php artisan make:model -mrc`로 모델·마이그레이션·컨트롤러 한번에 생성.',
+        '- 모든 인증 정보는 `.env`. 시크릿 절대 커밋 금지.',
+      ].join('\n'),
+    },
+    fwRails: {
+      title: '### Ruby on Rails',
+      rules: [
+        '- Fat 모델, Skinny 컨트롤러 — 복잡한 로직은 Service 객체 또는 Concern으로 이동.',
+        '- ActiveRecord 검증은 모델에; 다단계 비즈니스 규칙은 `app/services/`에.',
+        '- Controller에서 Strong Parameters 사용: `params.require(:model).permit(...)`.',
+        '- 조인 테이블에 데이터가 있으면 `has_and_belongs_to_many` 대신 `has_many :through` 사용.',
+        '- 백그라운드 작업은 ActiveJob + Sidekiq/GoodJob — 요청 사이클 블로킹 금지.',
+        '- 마이그레이션은 `rails generate` 사용. 파일 직접 생성 금지.',
+      ].join('\n'),
+    },
+    fwFlutter: {
+      title: '### Flutter',
+      rules: [
+        '- 프로젝트에서 이미 사용 중인 상태 관리 패턴 따르기 (Riverpod, Bloc, Provider).',
+        '- Widget은 얇게 유지 — 비즈니스 로직은 notifier, cubit, provider로 분리.',
+        '- 불필요한 리빌드 방지를 위해 가능한 곳에 `const` 생성자 사용.',
+        '- 플랫폼별 코드는 `lib/src/platform/`에 조건부 import 또는 `Platform` 체크 사용.',
+        '- 모든 asset은 `pubspec.yaml`에 먼저 선언. asset 경로 하드코딩 금지.',
+        '- 작업 완료 전 반드시 `flutter analyze`와 `flutter test` 실행.',
+      ].join('\n'),
+    },
+    fwGraphql: {
+      title: '### GraphQL',
+      rules: [
+        '- Schema-First: resolver 작성 전에 SDL (`schema.graphql`) 먼저 정의.',
+        '- Resolver는 얇게 유지 — Service 함수 또는 DataLoader에 위임.',
+        '- DataLoader로 요청당 DB 쿼리 배치·캐시 처리 (N+1 문제 제거).',
+        '- GraphQL 에러 응답에 내부 오류 상세 정보나 스택 트레이스 노출 금지.',
+        '- 입력 검증은 스키마 타입과 nullable/non-nullable 명시로 처리.',
       ].join('\n'),
     },
     orm: {

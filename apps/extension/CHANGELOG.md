@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 — 2026-06-26
+
+### Added
+- **New frameworks detected**: Nuxt, SvelteKit, Remix, Astro, tRPC, GraphQL/Apollo, Spring Boot, Laravel, Symfony, Rails, Flutter/Dart
+- **New build tools detected**: Gradle / Gradle Kotlin DSL (`build.gradle`, `build.gradle.kts`)
+- **Test frameworks detected**: Jest, Vitest, Cypress, Playwright, Testing Library
+- **New language precision**: TypeScript vs JavaScript distinguished by `tsconfig.json`; Kotlin detected via `build.gradle.kts`; Dart via `pubspec.yaml`
+- **Meta-framework priority**: Nuxt overrides Vue, SvelteKit overrides Svelte, Remix overrides React
+- **Python extras**: SQLAlchemy, Celery detected
+- **Templates**: Project structure + rules for Remix, Astro, Spring Boot, Laravel, Rails, Flutter, GraphQL
+
+### Improved
+- All 3 stack detectors (extension, CLI, MCP) now in sync
+
 ## 0.3.0 — 2026-06-26
 
 ### Added

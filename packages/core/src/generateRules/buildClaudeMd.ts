@@ -83,6 +83,35 @@ function buildProjectStructure({ frameworks, manifests }: ComposeInput['stack'])
     ].filter(Boolean).join('\n')
   }
 
+  if (frameworks.includes('Remix')) {
+    return [
+      '```',
+      'app/',
+      '  root.tsx          # Root layout + ErrorBoundary',
+      '  routes/           # File-based routes',
+      '    _index.tsx      # / route',
+      '    <name>.tsx      # loader + action + component in one file',
+      '  components/       # Shared UI components',
+      '  services/         # Business logic (called from loaders/actions)',
+      'public/             # Static assets',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Astro')) {
+    return [
+      '```',
+      'src/',
+      '  pages/            # .astro file = one route',
+      '  layouts/          # Shared page wrappers',
+      '  components/       # .astro + framework components (islands)',
+      '  content/          # Content Collections (Markdown/MDX)',
+      '  lib/              # Utilities',
+      'public/             # Static assets (copied as-is)',
+      '```',
+    ].join('\n')
+  }
+
   if (frameworks.includes('NestJS')) {
     return [
       '```',
@@ -200,6 +229,74 @@ function buildProjectStructure({ frameworks, manifests }: ComposeInput['stack'])
       '    mod.rs',
       'tests/              # Integration tests',
       'benches/            # Benchmarks',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Spring Boot')) {
+    return [
+      '```',
+      'src/main/java/<package>/',
+      '  controller/       # @RestController — thin request handlers',
+      '  service/          # @Service — business logic',
+      '  repository/       # @Repository — JPA data access',
+      '  entity/           # @Entity — JPA models',
+      '  dto/              # Request / response DTOs',
+      '  config/           # @Configuration beans',
+      'src/main/resources/',
+      '  application.yml   # Application config',
+      'src/test/java/      # Unit and integration tests',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Laravel')) {
+    return [
+      '```',
+      'app/',
+      '  Http/Controllers/ # Thin request handlers',
+      '  Services/         # Business logic',
+      '  Models/           # Eloquent models',
+      'routes/',
+      '  web.php           # Web routes',
+      '  api.php           # API routes',
+      'database/',
+      '  migrations/       # Schema migrations',
+      '  factories/        # Model factories for testing',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Rails')) {
+    return [
+      '```',
+      'app/',
+      '  controllers/      # Thin request handlers',
+      '  models/           # ActiveRecord models',
+      '  services/         # Business logic objects',
+      '  jobs/             # ActiveJob background jobs',
+      'db/',
+      '  migrate/          # Schema migrations',
+      'config/',
+      '  routes.rb         # URL routing',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Flutter')) {
+    return [
+      '```',
+      'lib/',
+      '  main.dart         # Entry point',
+      '  app.dart          # App widget + router',
+      '  features/         # Feature-based organization',
+      '    <feature>/',
+      '      screens/      # Full-page widgets',
+      '      widgets/      # Reusable sub-widgets',
+      '      providers/    # State management',
+      '  core/             # Shared utilities, constants, theme',
+      '  data/             # Repositories, API clients, models',
+      'test/               # Widget and unit tests',
       '```',
     ].join('\n')
   }
@@ -333,42 +430,57 @@ function frameworkRules(
 ): string {
   const rules: string[] = []
 
+  // Frontend / meta-framework (pick one primary)
   if (frameworks.includes('Next.js')) {
     rules.push(`\n${L.fwNextjs.title}\n${L.fwNextjs.rules}`)
+  } else if (frameworks.includes('Remix')) {
+    rules.push(`\n${L.fwRemix.title}\n${L.fwRemix.rules}`)
   } else if (frameworks.includes('Nuxt')) {
     rules.push(`\n${L.fwNuxt.title}\n${L.fwNuxt.rules}`)
-  } else if (frameworks.includes('React')) {
-    rules.push(`\n${L.fwReact.title}\n${L.fwReact.rules}`)
+  } else if (frameworks.includes('Astro')) {
+    rules.push(`\n${L.fwAstro.title}\n${L.fwAstro.rules}`)
   } else if (frameworks.includes('SvelteKit') || frameworks.includes('Svelte')) {
     rules.push(`\n${L.fwSvelte.title}\n${L.fwSvelte.rules}`)
+  } else if (frameworks.includes('React')) {
+    rules.push(`\n${L.fwReact.title}\n${L.fwReact.rules}`)
   }
 
   if (frameworks.includes('Vue') && !frameworks.includes('Nuxt')) {
     rules.push(`\n${L.fwVue.title}\n${L.fwVue.rules}`)
   }
 
+  // Backend framework
   if (frameworks.includes('NestJS')) {
     rules.push(`\n${L.fwNestjs.title}\n${L.fwNestjs.rules}`)
   } else if (frameworks.includes('Express')) {
     rules.push(`\n${L.fwExpress.title}\n${L.fwExpress.rules}`)
-  }
-
-  if (frameworks.includes('Firebase')) {
-    rules.push(`\n${L.fwFirebase.title}\n${L.fwFirebase.rules}`)
-  }
-
-  if (frameworks.includes('Django')) {
+  } else if (frameworks.includes('Spring Boot')) {
+    rules.push(`\n${L.fwSpringBoot.title}\n${L.fwSpringBoot.rules}`)
+  } else if (frameworks.includes('Laravel')) {
+    rules.push(`\n${L.fwLaravel.title}\n${L.fwLaravel.rules}`)
+  } else if (frameworks.includes('Rails')) {
+    rules.push(`\n${L.fwRails.title}\n${L.fwRails.rules}`)
+  } else if (frameworks.includes('Django')) {
     rules.push(`\n${L.fwDjango.title}\n${L.fwDjango.rules}`)
-  }
-
-  if (frameworks.includes('FastAPI')) {
+  } else if (frameworks.includes('FastAPI')) {
     rules.push(`\n${L.fwFastApi.title}\n${L.fwFastApi.rules}`)
   }
 
+  // Mobile
+  if (frameworks.includes('Flutter')) {
+    rules.push(`\n${L.fwFlutter.title}\n${L.fwFlutter.rules}`)
+  }
+
+  // Data / API layer
+  if (frameworks.includes('GraphQL')) {
+    rules.push(`\n${L.fwGraphql.title}\n${L.fwGraphql.rules}`)
+  }
+  if (frameworks.includes('Firebase')) {
+    rules.push(`\n${L.fwFirebase.title}\n${L.fwFirebase.rules}`)
+  }
   if (frameworks.includes('Prisma') || frameworks.includes('Drizzle')) {
     const orm = frameworks.includes('Prisma') ? 'Prisma' : 'Drizzle'
-    const title = L.orm.title.replace('{orm}', orm)
-    rules.push(`\n${title}\n${L.orm.rules}`)
+    rules.push(`\n${L.orm.title.replace('{orm}', orm)}\n${L.orm.rules}`)
   }
 
   return rules.join('\n')
