@@ -581,17 +581,26 @@ interface PresetsTabProps {
   onGenerate: () => void
 }
 
+type PresetSubTab = 'builtin' | 'github'
+
 function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, onSearch, onSelect, onGenerate }: PresetsTabProps) {
+  const [subTab, setSubTab] = useState<PresetSubTab>('builtin')
   const isSearching = searchQuery.trim().length > 0
+
   const builtIn = presets.filter((p) => p.isBuiltIn)
   const github = presets.filter((p) => !p.isBuiltIn)
 
+  // Search: unified across both tabs, sorted by stars
   const searchResults = isSearching
     ? [...presets].sort((a, b) => b.stars - a.stars)
     : null
 
+  const displayList = isSearching
+    ? searchResults!
+    : subTab === 'builtin' ? builtIn : github
+
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3">
       {/* Active preset bar */}
       {selectedPreset && (
         <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-indigo-500/30 bg-indigo-950/30">
@@ -627,76 +636,58 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
           text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/60 transition-colors"
       />
 
-      {/* Results */}
-      {isSearching ? (
-        searchResults!.length === 0 ? (
-          <EmptyState label={s.noPresets} />
-        ) : (
-          <div className="space-y-2">
-            {searchResults!.map((preset) => (
-              <PresetCard
-                key={preset.id}
-                preset={preset}
-                isSelected={selectedPreset?.id === preset.id}
-                isPending={pendingPresetId === preset.id}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        )
-      ) : (
-        <>
-          {builtIn.length > 0 && (
-            <section className="space-y-2">
-              <PresetSectionHeader label={s.builtInSection} />
-              {builtIn.map((preset) => (
-                <PresetCard
-                  key={preset.id}
-                  preset={preset}
-                  isSelected={selectedPreset?.id === preset.id}
-                  isPending={pendingPresetId === preset.id}
-                  onSelect={onSelect}
-                />
-              ))}
-            </section>
-          )}
-
-          {github.length > 0 ? (
-            <section className="space-y-2">
-              <PresetSectionHeader
-                label={s.githubSection}
-                sortNote={`★ ${s.sortedByStars}`}
-              />
-              {github.map((preset) => (
-                <PresetCard
-                  key={preset.id}
-                  preset={preset}
-                  isSelected={selectedPreset?.id === preset.id}
-                  isPending={pendingPresetId === preset.id}
-                  onSelect={onSelect}
-                />
-              ))}
-            </section>
-          ) : (
-            builtIn.length > 0 && (
-              <p className="text-[11px] text-gray-700 text-center py-2">{s.githubUnavailable}</p>
+      {/* Sub-tabs (hidden while searching) */}
+      {!isSearching && (
+        <div className="flex border-b border-white/8 -mb-1">
+          {(['builtin', 'github'] as PresetSubTab[]).map((id) => {
+            const label = id === 'builtin' ? s.builtInSection : s.githubSection
+            const count = id === 'builtin' ? builtIn.length : github.length
+            return (
+              <button
+                key={id}
+                onClick={() => setSubTab(id)}
+                className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
+                  subTab === id
+                    ? 'border-indigo-500 text-white'
+                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {id === 'github' && <span className="text-amber-400/70">★</span>}
+                {label}
+                {count > 0 && (
+                  <span className={`text-[10px] px-1 py-px rounded-full ${
+                    subTab === id ? 'bg-indigo-700 text-indigo-200' : 'bg-white/8 text-gray-600'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
             )
+          })}
+          {!isSearching && subTab === 'github' && github.length > 0 && (
+            <span className="ml-auto self-center text-[10px] text-gray-700 pr-1">
+              {s.sortedByStars}
+            </span>
           )}
-
-          {builtIn.length === 0 && github.length === 0 && (
-            <EmptyState label={s.noPresets} />
-          )}
-        </>
+        </div>
       )}
-    </div>
-  )
-}
 
-function PresetSectionHeader({ label, sortNote }: { label: string; sortNote?: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest">{label}</p>
-      {sortNote && <p className="text-[10px] text-gray-700">{sortNote}</p>}
+      {/* Card list */}
+      {displayList.length === 0 ? (
+        <EmptyState label={subTab === 'github' && !isSearching ? s.githubUnavailable : s.noPresets} />
+      ) : (
+        <div className="space-y-2">
+          {displayList.map((preset) => (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              isSelected={selectedPreset?.id === preset.id}
+              isPending={pendingPresetId === preset.id}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 — 2026-06-26
+
+### Improved
+- Presets tab now has **Built-in / GitHub sub-tabs** instead of a single scrollable list. Click each tab to switch views. Searching automatically shows unified results across both.
+
 ## 0.7.1 — 2026-06-26
 
 ### Added
