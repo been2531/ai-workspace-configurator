@@ -2,84 +2,116 @@
 
 > Auto-generate Claude Code & Codex optimization files the moment you open a project.
 
-## What it does
+When you open a workspace, **AI Workspace Configurator** detects your stack and writes AI instruction files tailored to it — no manual editing, no copy-pasting templates.
 
-When you open a workspace, **AI Workspace Configurator** detects your project stack (language, frameworks, package manager) and writes a set of AI instruction files tailored to it — no manual editing required.
+---
+
+## Generated files
 
 | File | Purpose |
 |------|---------|
-| `CLAUDE.md` | Agent guidelines for Claude Code |
-| `AGENTS.md` | Multi-agent handoff protocol (Codex / GPT) |
-| `.cursorrules` | Cursor AI rules |
+| `CLAUDE.md` | Stack-specific agent rules for Claude Code |
+| `AGENTS.md` | Multi-agent handoff protocol + reviewer checklist |
+| `.cursorrules` | Cursor AI rules (legacy format) |
+| `.cursor/rules/project.mdc` | Cursor AI rules (new MDC format) |
 | `.mcp.json` | MCP server auto-configuration |
-| `.claude/skills/*.md` | Slash commands (`/run`, `/test`, `/review`, `/db-migrate`) |
+| `.claude/skills/*.md` | Slash commands: `/run`, `/test`, `/review`, `/db-migrate`, `/commit`, `/fix`, `/type-check` |
 
-## Features
+Everything runs **100% locally** — no API calls, no data sent anywhere.
 
-- **Zero-config stack detection** — React, Next.js, Vue, Django, FastAPI, Go, Rust, and more
-- **Community presets** — browse and apply community-maintained rule sets (e.g. Karpathy Agent OS)
-- **EN / KO bilingual UI** — toggle language in the dashboard
-- **Generated file language** — choose whether CLAUDE.md / AGENTS.md are written in English or Korean
-- **Coding style settings** — type strictness, paradigm, comment style, autonomy level
-- **100% local computation** — stack detection and rule generation run entirely on your machine; no data is sent anywhere
+---
+
+## Stack detection — 20+ frameworks
+
+Detects your language and frameworks automatically from manifest files:
+
+**JavaScript / TypeScript** — Next.js, Nuxt, SvelteKit, Remix, Astro, React, Vue, Svelte, NestJS, Express, Fastify, Prisma, Drizzle, GraphQL, tRPC, Firebase, Vitest, Jest, Cypress, Playwright
+
+**Python** — Django, FastAPI, Flask, SQLAlchemy, Celery
+
+**Java / Kotlin** — Spring Boot (Maven + Gradle)
+
+**Go, Rust, PHP (Laravel / Symfony), Ruby (Rails), Flutter / Dart**
+
+---
+
+## What gets generated
+
+### CLAUDE.md
+- Project structure guide for your specific stack
+- Testing conventions (pytest, Vitest, Go table tests, Rust `#[cfg(test)]`, …)
+- AI workflow hints — TypeScript type-checking steps, Prisma migration workflow, linter commands
+- 5–8 framework-specific rules per detected framework
+
+### AGENTS.md
+- Multi-agent handoff protocol
+- Stack-specific reviewer checklist (TypeScript, NestJS, Django, Prisma, Go, Rust, …)
+
+### Slash commands
+| Command | Action |
+|---------|--------|
+| `/run` | Start dev server |
+| `/test` | Run tests |
+| `/review` | Code review with checklist |
+| `/db-migrate` | Run migrations safely |
+| `/commit` | Draft + create git commit |
+| `/fix` | Diagnose and fix an error |
+| `/type-check` | TypeScript error sweep |
+
+---
+
+## Stale config detection
+
+On every workspace open, the extension checks whether your `CLAUDE.md` is still current. If you've added new frameworks since the last generation, a warning appears:
+
+> _"AI Workspace files may be outdated (new: Prisma, Vitest). Regenerate?"_
+
+---
 
 ## Quick start
 
 1. Open any project in VS Code
-2. Run **"AI Workspace: Generate Config Files"** from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-   — or click **"⚡ Generate Config"** in the dashboard
-3. The files appear in your workspace root
+2. Click **"⚡ Generate Now"** in the startup notification
+   — or run **"AI Workspace: Generate Config Files"** from the Command Palette (`Ctrl+Shift+P`)
+3. Start using Claude Code immediately
+
+---
 
 ## Dashboard
 
-Open the dashboard with:
-- Command Palette → **AI Workspace: Open Dashboard**
-
-The dashboard has four tabs:
+**Command Palette → "AI Workspace: Open Dashboard"**
 
 | Tab | Contents |
 |-----|---------|
-| **Home** | File status, generate button, active preset |
-| **Settings** | Language, coding style, agent mode |
-| **Preview** | Read generated file content before saving |
+| **Home** | File status, generate / regenerate |
+| **Settings** | UI language, generated file language, coding style, agent mode |
+| **Preview** | Read file content before writing |
 | **Presets** | Browse and apply community presets |
 
-## Stack support
-
-| Language / Framework | Detected via |
-|----------------------|-------------|
-| TypeScript / JavaScript | `package.json` |
-| React, Next.js, Vue, Svelte | package dependencies |
-| Python (Django, FastAPI, Flask) | `requirements.txt`, `pyproject.toml` |
-| Go | `go.mod` |
-| Rust | `Cargo.toml` |
-| Java / Kotlin | `pom.xml`, `build.gradle` |
-| Ruby on Rails | `Gemfile` |
-| PHP (Laravel) | `composer.json` |
+---
 
 ## Community presets
 
-The **Presets** tab lets you search and apply community rule sets. Built-in presets:
+The Presets tab lets you search and apply community rule sets.
 
+Built-in presets:
 - **Karpathy Agent OS** — LLM OS pre-reasoning + multi-agent hierarchy
-- **Minimal** — Minimal guidelines, maximum agent autonomy
-- **Strict TypeScript** — Enforced type safety and Result pattern
+- **Minimal** — minimal guidelines, maximum agent autonomy
+- **Strict TypeScript** — enforced type safety and Result pattern
 
-## Configuration is persisted
-
-Settings (language preference, coding style, active preset) are saved in VS Code global state and restored the next time you open VS Code.
+---
 
 ## Privacy
 
-- No telemetry is collected
-- No code is sent to any server
-- Firebase is used only to browse community presets (read-only, public data)
-- LLM features (Pro) go through a Cloudflare Worker proxy — API keys never leave the server
+- No telemetry
+- No code sent to any server
+- Firebase used only for community presets (public, read-only)
+- LLM proxy via Cloudflare Workers — API keys never reach the client
 
-## Contributing
+---
 
-Issues and PRs welcome at [github.com/been2531/ai-workspace-configurator](https://github.com/been2531/ai-workspace-configurator).
+## Links
 
-## License
-
-MIT
+- [GitHub Repository](https://github.com/been2531/ai-workspace-configurator)
+- [Changelog](https://github.com/been2531/ai-workspace-configurator/blob/master/apps/extension/CHANGELOG.md)
+- [Issues](https://github.com/been2531/ai-workspace-configurator/issues)
