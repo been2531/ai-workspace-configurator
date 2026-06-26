@@ -14,6 +14,7 @@ export default defineConfig({
     // extension dist 안의 webview 폴더로 출력 — panelManager가 여기서 로드
     outDir: path.resolve(__dirname, '../extension/dist/webview'),
     emptyOutDir: true,
+    target: 'es2022',
     rollupOptions: {
       output: { entryFileNames: 'webview.js', assetFileNames: 'webview.[ext]' },
     },
