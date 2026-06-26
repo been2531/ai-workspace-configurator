@@ -172,11 +172,9 @@ export class PanelManager {
   <h1>AI Workspace Configurator</h1>
   <p>${isKo ? '프로젝트 스택을 감지하고 Claude Code / Codex 최적화 파일을 자동 생성합니다.' : 'Auto-generate optimization files for Claude Code & Codex.'}</p>
   <button onclick="configure()">${isKo ? '⚡ 지금 설정 생성' : '⚡ Generate Config'}</button>
-  <button onclick="syncTeam()">☁ ${isKo ? '팀 동기화' : 'Team Sync'} (Pro)</button>
   <script>
     const vscode = acquireVsCodeApi()
     function configure() { vscode.postMessage({ command: 'configure' }) }
-    function syncTeam() { vscode.postMessage({ command: 'syncTeam' }) }
   </script>
 </body>
 </html>`

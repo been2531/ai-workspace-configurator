@@ -18,7 +18,6 @@ const MESSAGES: Record<Locale, {
   prompt: string
   generateNow: string
   later: string
-  teamSyncPro: string
   alreadyConfigured: string
   staleConfig: (desc: string) => string
   regenerate: string
@@ -35,7 +34,6 @@ const MESSAGES: Record<Locale, {
     prompt: 'AI Workspace Configurator: Generate optimization files for Claude Code / Codex?',
     generateNow: '⚡ Generate Now',
     later: 'Later',
-    teamSyncPro: 'Team sync is available in the Pro plan.',
     alreadyConfigured: 'AI Workspace already configured. Regenerate?',
     staleConfig: (desc) => `AI Workspace files may be outdated (${desc}). Regenerate?`,
     regenerate: '↺ Regenerate',
@@ -52,7 +50,6 @@ const MESSAGES: Record<Locale, {
     prompt: 'AI Workspace Configurator: Claude Code / Codex 최적화 파일을 생성할까요?',
     generateNow: '⚡ 지금 생성',
     later: '나중에',
-    teamSyncPro: '팀 동기화 기능은 Pro 플랜에서 제공됩니다.',
     alreadyConfigured: 'AI Workspace가 이미 설정되어 있습니다. 재생성할까요?',
     staleConfig: (desc) => `AI Workspace 파일이 오래된 것 같습니다 (${desc}). 재생성할까요?`,
     regenerate: '↺ 재생성',
@@ -123,11 +120,6 @@ export function activate(context: vscode.ExtensionContext) {
       panelManager.show()
     }),
 
-    vscode.commands.registerCommand('aiWorkspace.syncTeam', () => {
-      const profile = getProfile(context)
-      const M = MESSAGES[profile.locale ?? 'en']
-      vscode.window.showInformationMessage(M.teamSyncPro)
-    }),
   )
 
   // Handle webview messages that need extension-level access
@@ -138,9 +130,6 @@ export function activate(context: vscode.ExtensionContext) {
         break
       case 'saveProfile':
         await saveProfile(context, message.payload)
-        break
-      case 'syncTeam':
-        vscode.commands.executeCommand('aiWorkspace.syncTeam')
         break
     }
   })

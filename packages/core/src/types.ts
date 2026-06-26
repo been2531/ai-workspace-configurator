@@ -120,6 +120,7 @@ export interface PresetSummary {
   tags: string[]
   stars: number
   isBuiltIn: boolean
+  githubUrl?: string
   overrideKeys: string[]
 }
 
@@ -155,6 +156,5 @@ export type WebviewMessage =
   | { command: 'ready' }
   | { command: 'configure' }
   | { command: 'saveProfile'; payload: UserProfile }
-  | { command: 'syncTeam' }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }

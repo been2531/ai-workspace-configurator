@@ -10,7 +10,6 @@ import type {
 import { t } from './i18n'
 import type { Locale } from './i18n'
 
-// VS Code API — available only inside a webview
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void }
 const vscodeApi =
   typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null
@@ -41,6 +40,7 @@ export default function App() {
   const [settingsSaved, setSettingsSaved] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
+  const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
   const [presetQuery, setPresetQuery] = useState('')
   const presetsLoadedRef = useRef(false)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
@@ -77,6 +77,7 @@ export default function App() {
           break
         case 'presetApplied':
           setSelectedPreset(msg.payload)
+          setPendingPresetId(null)
           break
       }
     }
@@ -116,6 +117,8 @@ export default function App() {
   }
 
   function handlePresetSelect(presetId: string | null) {
+    if (presetId) setPendingPresetId(presetId)
+    else setPendingPresetId(null)
     postMessage({ command: 'selectPreset', presetId })
   }
 
@@ -145,7 +148,6 @@ export default function App() {
           <h1 className="text-base font-bold tracking-tight leading-tight">{s.title}</h1>
           <p className="text-xs text-gray-500 mt-0.5">{s.subtitle}</p>
         </div>
-        {/* Language toggle */}
         <div className="flex gap-1 mt-0.5 shrink-0">
           {(['en', 'ko'] as Locale[]).map((loc) => (
             <button
@@ -201,7 +203,6 @@ export default function App() {
             fileStatus={fileStatus}
             selectedPreset={selectedPreset}
             onConfigure={handleConfigure}
-            onSyncTeam={() => postMessage({ command: 'syncTeam' })}
             onGoToPresets={() => handleTabChange('presets')}
           />
         )}
@@ -233,6 +234,7 @@ export default function App() {
             s={s}
             presets={presets}
             selectedPreset={selectedPreset}
+            pendingPresetId={pendingPresetId}
             searchQuery={presetQuery}
             onSearch={handlePresetSearch}
             onSelect={handlePresetSelect}
@@ -253,17 +255,16 @@ interface HomeTabProps {
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
   onConfigure: () => void
-  onSyncTeam: () => void
   onGoToPresets: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure, onSyncTeam, onGoToPresets }: HomeTabProps) {
-  const fileEntries: { label: string; exists: boolean }[] = [
-    { label: 'CLAUDE.md', exists: fileStatus.claude },
-    { label: 'AGENTS.md', exists: fileStatus.agents },
-    { label: '.cursorrules', exists: fileStatus.cursor },
-    { label: '.mcp.json', exists: fileStatus.mcp },
-    { label: s.skillsLabel, exists: fileStatus.skills },
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure, onGoToPresets }: HomeTabProps) {
+  const fileEntries: { label: string; hint: string; exists: boolean }[] = [
+    { label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
+    { label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
+    { label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor },
+    { label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp },
+    { label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills },
   ]
 
   const allExist = fileEntries.every((f) => f.exists)
@@ -274,10 +275,10 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure,
       {/* Active preset banner */}
       {selectedPreset && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-md border border-emerald-800/60 bg-emerald-950/30 cursor-pointer hover:bg-emerald-950/50 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-800/50 bg-emerald-950/25 cursor-pointer hover:bg-emerald-950/40 transition-colors"
           onClick={onGoToPresets}
         >
-          <span className="text-emerald-400 text-xs">●</span>
+          <span className="text-emerald-400 text-[10px]">●</span>
           <span className="text-xs text-emerald-300 font-medium">{s.selectedPresetLabel}:</span>
           <span className="text-xs text-emerald-200">{selectedPreset.name}</span>
         </div>
@@ -285,93 +286,59 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure,
 
       {/* File status */}
       <section>
-        <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide">
+        <p className="text-[10px] text-gray-600 font-semibold mb-2 uppercase tracking-widest">
           {s.fileStatusTitle}
         </p>
-        <div className="grid grid-cols-2 gap-1.5">
-          {fileEntries.map(({ label, exists }) => (
+        <div className="border border-white/6 rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+          {fileEntries.map(({ label, hint, exists }) => (
             <div
               key={label}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-mono ${
-                exists
-                  ? 'border-emerald-800/60 bg-emerald-950/40 text-emerald-400'
-                  : 'border-white/8 bg-white/3 text-gray-500'
+              className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
+                exists ? 'bg-emerald-950/20' : 'bg-transparent'
               }`}
             >
-              <span className={exists ? 'text-emerald-400' : 'text-gray-600'}>
+              <span className={`text-[8px] shrink-0 ${exists ? 'text-emerald-400' : 'text-gray-700'}`}>
                 {exists ? '●' : '○'}
               </span>
-              {label}
+              <span className={`font-mono text-xs shrink-0 w-28 ${exists ? 'text-emerald-300' : 'text-gray-500'}`}>
+                {label}
+              </span>
+              <span className="text-[11px] text-gray-600 leading-snug">{hint}</span>
             </div>
           ))}
         </div>
         {allExist && (
-          <p className="text-xs text-gray-600 mt-2">
-            All files present. Re-generate to overwrite.
+          <p className="text-[11px] text-gray-600 mt-2">
+            {s.allFilesPresent}
           </p>
         )}
       </section>
 
       {/* Error */}
       {status === 'error' && errorMsg && (
-        <div className="rounded-md border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-400">
+        <div className="rounded-xl border border-red-800/50 bg-red-950/30 px-3 py-2.5 text-xs text-red-400">
           <span className="font-semibold">{s.errorPrefix}: </span>
           {errorMsg}
         </div>
       )}
 
-      {/* Actions */}
-      <section className="space-y-2">
-        <button
-          onClick={onConfigure}
-          disabled={status === 'scanning'}
-          className={`w-full py-2.5 px-4 rounded-lg text-xs font-semibold transition-colors ${
-            status === 'done'
-              ? 'bg-emerald-700 hover:bg-emerald-600'
-              : 'bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed'
-          }`}
-        >
-          {status === 'scanning'
-            ? s.configuringBtn
-            : status === 'done'
-              ? s.doneBtn
-              : s.configureBtn}
-        </button>
+      {/* Generate button */}
+      <button
+        onClick={onConfigure}
+        disabled={status === 'scanning'}
+        className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${
+          status === 'done'
+            ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
+            : 'bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white'
+        }`}
+      >
+        {status === 'scanning'
+          ? s.configuringBtn
+          : status === 'done'
+            ? s.doneBtn
+            : s.configureBtn}
+      </button>
 
-        <button
-          onClick={onSyncTeam}
-          className="w-full py-2.5 px-4 bg-white/5 hover:bg-white/8 border border-white/8
-            rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-2"
-        >
-          {s.teamSyncBtn}
-          <span className="text-indigo-400 text-[10px] font-bold uppercase tracking-wide">
-            {s.proLabel}
-          </span>
-        </button>
-      </section>
-
-      {/* Files that will be generated */}
-      {noneExist && (
-        <section>
-          <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide">
-            {s.willGenerateTitle}
-          </p>
-          <div className="border border-white/8 rounded-lg divide-y divide-white/5">
-            {[
-              ['CLAUDE.md', 'Claude Code agent guidelines'],
-              ['AGENTS.md', 'Multi-agent handoff rules'],
-              ['.cursorrules', 'Codex token diet'],
-              ['.mcp.json', 'MCP server auto-config'],
-              [s.skillsLabel, `${s.skillsNote} (/run /test /review …)`],
-            ].map(([file, desc]) => (
-              <div key={file} className="flex items-center gap-3 px-3 py-2">
-                <span className="font-mono text-xs text-gray-300 w-28 shrink-0">{file}</span>
-                <span className="text-xs text-gray-600">{desc}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   )
 }
@@ -409,7 +376,6 @@ function SettingsTab({
 }: SettingsTabProps) {
   return (
     <div className="space-y-5">
-      {/* Language */}
       <Section title={s.settingsTitle}>
         <Field label={s.uiLang}>
           <SegmentControl
@@ -433,7 +399,6 @@ function SettingsTab({
         </Field>
       </Section>
 
-      {/* Coding style */}
       <Section title={s.codingStyleTitle}>
         <Field label={s.typeStrictness}>
           <SegmentControl
@@ -476,7 +441,6 @@ function SettingsTab({
         </Field>
       </Section>
 
-      {/* Agent mode */}
       <Section title={s.agentModeTitle}>
         <Field label={s.autonomyLevel}>
           <SegmentControl
@@ -505,10 +469,9 @@ function SettingsTab({
         </div>
       </Section>
 
-      {/* Save */}
       <button
         onClick={onSave}
-        className={`w-full py-2.5 rounded-lg text-xs font-semibold transition-colors ${
+        className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-colors ${
           settingsSaved
             ? 'bg-emerald-700 text-white'
             : 'bg-indigo-600 hover:bg-indigo-500 text-white'
@@ -549,15 +512,14 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{s.previewTitle}</p>
+      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest">{s.previewTitle}</p>
 
-      {/* Main file picker */}
       <div className="flex gap-1 flex-wrap">
         {STATIC_PREVIEW_FILES.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => onFileChange(key)}
-            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
               previewFile === key
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
@@ -569,7 +531,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
         {skillNames.length > 0 && (
           <button
             onClick={() => onFileChange('skills')}
-            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
               previewFile === 'skills'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white/5 text-gray-400 hover:bg-white/10'
@@ -580,9 +542,8 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
         )}
       </div>
 
-      {/* Skill sub-picker */}
       {previewFile === 'skills' && skillNames.length > 1 && (
-        <div className="flex gap-1 flex-wrap pl-2 border-l-2 border-indigo-800">
+        <div className="flex gap-1 flex-wrap pl-2 border-l-2 border-indigo-800/60">
           {skillNames.map((name) => (
             <button
               key={name}
@@ -599,8 +560,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
         </div>
       )}
 
-      {/* Content */}
-      <pre className="bg-black/30 border border-white/8 rounded-lg p-3 text-xs text-gray-300
+      <pre className="bg-black/20 border border-white/6 rounded-xl p-3 text-xs text-gray-300
         font-mono overflow-auto max-h-[60vh] leading-relaxed whitespace-pre-wrap">
         {previewContent}
       </pre>
@@ -614,38 +574,44 @@ interface PresetsTabProps {
   s: ReturnType<typeof t>
   presets: PresetSummary[]
   selectedPreset: { id: string; name: string } | null
+  pendingPresetId: string | null
   searchQuery: string
   onSearch: (q: string) => void
   onSelect: (presetId: string | null) => void
   onGenerate: () => void
 }
 
-function PresetsTab({ s, presets, selectedPreset, searchQuery, onSearch, onSelect, onGenerate }: PresetsTabProps) {
+function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, onSearch, onSelect, onGenerate }: PresetsTabProps) {
+  const isSearching = searchQuery.trim().length > 0
+  const builtIn = presets.filter((p) => p.isBuiltIn)
+  const github = presets.filter((p) => !p.isBuiltIn)
+
+  const searchResults = isSearching
+    ? [...presets].sort((a, b) => b.stars - a.stars)
+    : null
+
   return (
-    <div className="space-y-3">
-      {/* Active preset banner + generate CTA */}
+    <div className="space-y-4">
+      {/* Active preset bar */}
       {selectedPreset && (
-        <div className="rounded-md border border-emerald-800/60 bg-emerald-950/30 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-emerald-400 text-xs shrink-0">●</span>
-              <span className="text-xs text-emerald-300 font-medium shrink-0">{s.selectedPresetLabel}:</span>
-              <span className="text-xs text-emerald-200 truncate">{selectedPreset.name}</span>
-            </div>
-            <button
-              onClick={() => onSelect(null)}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors shrink-0 ml-2"
-            >
-              {s.clearPreset}
-            </button>
+        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-indigo-500/30 bg-indigo-950/30">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-indigo-400 text-[10px] shrink-0">✓</span>
+            <span className="text-xs text-indigo-200 font-medium truncate">{selectedPreset.name}</span>
+            <span className="text-[10px] text-indigo-500 shrink-0">{s.activePreset}</span>
           </div>
-          <div className="border-t border-emerald-800/40 px-3 py-2 flex items-center justify-between gap-3">
-            <p className="text-[11px] text-emerald-700 flex-1">{s.presetReadyNote}</p>
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onGenerate}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded transition-colors shrink-0"
+              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors"
             >
               {s.configureBtn}
+            </button>
+            <button
+              onClick={() => onSelect(null)}
+              className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              {s.clearPreset}
             </button>
           </div>
         </div>
@@ -657,28 +623,80 @@ function PresetsTab({ s, presets, selectedPreset, searchQuery, onSearch, onSelec
         value={searchQuery}
         onChange={(e) => onSearch(e.target.value)}
         placeholder={s.searchPlaceholder}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs
-          text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"
+        className="w-full bg-white/[0.04] border border-white/8 rounded-xl px-3 py-2 text-xs
+          text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/60 transition-colors"
       />
 
-      {/* Preset list */}
-      {presets.length === 0 ? (
-        <div className="flex items-center justify-center h-32 text-xs text-gray-600">
-          {s.noPresets}
-        </div>
+      {/* Results */}
+      {isSearching ? (
+        searchResults!.length === 0 ? (
+          <EmptyState label={s.noPresets} />
+        ) : (
+          <div className="space-y-2">
+            {searchResults!.map((preset) => (
+              <PresetCard
+                key={preset.id}
+                preset={preset}
+                isSelected={selectedPreset?.id === preset.id}
+                isPending={pendingPresetId === preset.id}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        )
       ) : (
-        <div className="space-y-2">
-          {presets.map((preset) => (
-            <PresetCard
-              key={preset.id}
-              preset={preset}
-              isSelected={selectedPreset?.id === preset.id}
-              s={s}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
+        <>
+          {builtIn.length > 0 && (
+            <section className="space-y-2">
+              <PresetSectionHeader label={s.builtInSection} />
+              {builtIn.map((preset) => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  isSelected={selectedPreset?.id === preset.id}
+                  isPending={pendingPresetId === preset.id}
+                  onSelect={onSelect}
+                />
+              ))}
+            </section>
+          )}
+
+          {github.length > 0 ? (
+            <section className="space-y-2">
+              <PresetSectionHeader
+                label={s.githubSection}
+                sortNote={`★ ${s.sortedByStars}`}
+              />
+              {github.map((preset) => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  isSelected={selectedPreset?.id === preset.id}
+                  isPending={pendingPresetId === preset.id}
+                  onSelect={onSelect}
+                />
+              ))}
+            </section>
+          ) : (
+            builtIn.length > 0 && (
+              <p className="text-[11px] text-gray-700 text-center py-2">{s.githubUnavailable}</p>
+            )
+          )}
+
+          {builtIn.length === 0 && github.length === 0 && (
+            <EmptyState label={s.noPresets} />
+          )}
+        </>
       )}
+    </div>
+  )
+}
+
+function PresetSectionHeader({ label, sortNote }: { label: string; sortNote?: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest">{label}</p>
+      {sortNote && <p className="text-[10px] text-gray-700">{sortNote}</p>}
     </div>
   )
 }
@@ -686,70 +704,96 @@ function PresetsTab({ s, presets, selectedPreset, searchQuery, onSearch, onSelec
 interface PresetCardProps {
   preset: PresetSummary
   isSelected: boolean
-  s: ReturnType<typeof t>
+  isPending: boolean
   onSelect: (presetId: string | null) => void
 }
 
-function PresetCard({ preset, isSelected, s, onSelect }: PresetCardProps) {
+function PresetCard({ preset, isSelected, isPending, onSelect }: PresetCardProps) {
+  const active = isSelected || isPending
+
   return (
     <div
-      className={`border rounded-lg p-3 space-y-2 transition-colors ${
-        isSelected
-          ? 'border-indigo-600/70 bg-indigo-950/30'
-          : 'border-white/8 bg-white/2 hover:bg-white/4'
+      onClick={() => !isPending && onSelect(isSelected ? null : preset.id)}
+      className={`group relative rounded-xl border px-4 py-3 transition-all select-none ${
+        isPending
+          ? 'border-indigo-500/40 bg-indigo-950/20 cursor-wait opacity-70'
+          : active
+            ? 'border-indigo-500/60 bg-indigo-950/35 cursor-pointer shadow-[0_0_0_1px_rgba(99,102,241,0.15)]'
+            : 'border-white/6 bg-white/[0.02] hover:border-white/14 hover:bg-white/[0.04] cursor-pointer'
       }`}
     >
-      {/* Header row */}
-      <div className="flex items-start gap-2">
-        <div className="flex-1 min-w-0">
+      {/* Top row */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-gray-100">{preset.name}</span>
+            <span className="text-[13px] font-semibold text-gray-100 leading-snug">{preset.name}</span>
             {preset.isBuiltIn && (
-              <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-400 bg-indigo-950 border border-indigo-800/60 px-1.5 py-0.5 rounded">
-                {s.builtInBadge}
+              <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/15 border border-indigo-500/25 px-1.5 py-px rounded-full">
+                Built-in
               </span>
             )}
           </div>
           <p className="text-[11px] text-gray-600 mt-0.5">by {preset.author}</p>
         </div>
-        <button
-          onClick={() => onSelect(isSelected ? null : preset.id)}
-          className={`px-3 py-1.5 rounded text-xs font-semibold shrink-0 transition-colors ${
-            isSelected
-              ? 'bg-indigo-700 text-white hover:bg-indigo-600'
-              : 'bg-white/8 text-gray-300 hover:bg-white/14'
-          }`}
-        >
-          {isSelected ? `✓ ${s.activePreset}` : s.usePreset}
-        </button>
+
+        {/* Stars + selector */}
+        <div className="flex items-center gap-2 shrink-0">
+          {!preset.isBuiltIn && preset.stars > 0 && (
+            <span className="text-[11px] text-amber-400/80 font-medium tabular-nums">
+              ★ {preset.stars.toLocaleString()}
+            </span>
+          )}
+          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+            active
+              ? 'border-indigo-400 bg-indigo-500'
+              : 'border-white/20 group-hover:border-white/40'
+          }`}>
+            {isPending
+              ? <span className="text-white text-[8px] leading-none">…</span>
+              : active && <span className="text-white text-[8px] leading-none font-bold">✓</span>
+            }
+          </div>
+        </div>
       </div>
 
       {/* Description */}
-      <p className="text-[11px] text-gray-400 leading-relaxed">{preset.description}</p>
+      {preset.description && (
+        <p className="text-[12px] text-gray-400 mt-2 leading-relaxed line-clamp-2">
+          {preset.description}
+        </p>
+      )}
 
       {/* Tags */}
       {preset.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {preset.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] px-1.5 py-0.5 bg-white/5 text-gray-500 rounded"
-            >
+        <div className="flex flex-wrap gap-1 mt-2">
+          {preset.tags.slice(0, 5).map((tag) => (
+            <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-white/4 text-gray-500 rounded-md">
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* Footer meta */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-600">
-        {!preset.isBuiltIn && (
-          <span>★ {preset.stars} {s.starsLabel}</span>
-        )}
-        {preset.overrideKeys.length > 0 && (
-          <span className="font-mono">{preset.overrideKeys.join(', ')}</span>
-        )}
-      </div>
+      {/* GitHub link */}
+      {preset.githubUrl && (
+        <div className="mt-2 pt-2 border-t border-white/[0.04]">
+          <a
+            href={preset.githubUrl}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[10px] text-gray-600 hover:text-indigo-400 transition-colors font-mono"
+          >
+            ↗ {preset.githubUrl.replace('https://github.com/', '')}
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center h-28 text-xs text-gray-600">
+      {label}
     </div>
   )
 }
@@ -759,8 +803,8 @@ function PresetCard({ preset, isSelected, s, onSelect }: PresetCardProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">{title}</p>
-      <div className="border border-white/8 rounded-lg px-3 py-3 space-y-3">{children}</div>
+      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest mb-2">{title}</p>
+      <div className="border border-white/6 rounded-xl px-3 py-3 space-y-3">{children}</div>
     </div>
   )
 }
@@ -784,7 +828,7 @@ function SegmentControl({
   onChange: (v: string) => void
 }) {
   return (
-    <div className="flex rounded-md overflow-hidden border border-white/10">
+    <div className="flex rounded-lg overflow-hidden border border-white/8">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -792,7 +836,7 @@ function SegmentControl({
           className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
             value === opt.value
               ? 'bg-indigo-600 text-white'
-              : 'bg-white/3 text-gray-400 hover:bg-white/8 hover:text-gray-300'
+              : 'bg-white/[0.02] text-gray-400 hover:bg-white/8 hover:text-gray-300'
           }`}
         >
           {opt.label}
@@ -814,14 +858,14 @@ function Toggle({
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-md border text-xs transition-colors ${
+      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-colors ${
         checked
-          ? 'border-indigo-700/60 bg-indigo-950/40 text-indigo-300'
-          : 'border-white/8 bg-white/3 text-gray-500 hover:text-gray-400'
+          ? 'border-indigo-700/50 bg-indigo-950/35 text-indigo-300'
+          : 'border-white/6 bg-white/[0.02] text-gray-500 hover:text-gray-400'
       }`}
     >
       <span
-        className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
+        className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
           checked ? 'border-indigo-400 bg-indigo-500' : 'border-gray-600'
         }`}
       >

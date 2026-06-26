@@ -11,12 +11,16 @@ export interface UIStrings {
   // Home — file status
   fileStatusTitle: string
   noWorkspace: string
+  hintClaude: string
+  hintAgents: string
+  hintCursor: string
+  hintMcp: string
+  hintSkills: string
+  allFilesPresent: string
   // Home — actions
   configureBtn: string
   configuringBtn: string
   doneBtn: string
-  teamSyncBtn: string
-  proLabel: string
   willGenerateTitle: string
   // Settings
   settingsTitle: string
@@ -53,13 +57,13 @@ export interface UIStrings {
   // Presets tab
   presetsTab: string
   searchPlaceholder: string
-  builtInBadge: string
-  starsLabel: string
-  overridesLabel: string
-  usePreset: string
+  builtInSection: string
+  githubSection: string
+  sortedByStars: string
+  githubUnavailable: string
+  noPresets: string
   activePreset: string
   clearPreset: string
-  noPresets: string
   selectedPresetLabel: string
   presetReadyNote: string
   // Error
@@ -74,11 +78,15 @@ const en: UIStrings = {
   previewTab: 'Preview',
   fileStatusTitle: 'Config files',
   noWorkspace: 'No workspace open',
+  hintClaude: 'Claude Code session memory & coding guidelines',
+  hintAgents: 'Multi-agent handoff protocol & task boundaries',
+  hintCursor: 'Cursor / Codex inline rules (token-efficient)',
+  hintMcp: 'MCP server auto-configuration',
+  hintSkills: 'Slash commands  /run  /test  /review …',
+  allFilesPresent: 'All files present. Re-generate to update.',
   configureBtn: '⚡ Generate Config',
   configuringBtn: 'Scanning…',
   doneBtn: '✓ Done',
-  teamSyncBtn: '☁ Team Sync',
-  proLabel: 'Pro',
   willGenerateTitle: 'Will generate',
   settingsTitle: 'Settings',
   uiLang: 'UI language',
@@ -111,15 +119,15 @@ const en: UIStrings = {
   skillsNote: 'Slash commands (always English)',
   presetsTab: 'Presets',
   searchPlaceholder: 'Search presets…',
-  builtInBadge: 'Built-in',
-  starsLabel: 'stars',
-  overridesLabel: 'overrides',
-  usePreset: 'Use Preset',
+  builtInSection: 'Built-in',
+  githubSection: 'GitHub',
+  sortedByStars: 'highest stars first',
+  githubUnavailable: 'GitHub unavailable — showing built-in presets only.',
+  noPresets: 'No results found.',
   activePreset: 'Active',
   clearPreset: 'Clear',
-  noPresets: 'No presets found.',
   selectedPresetLabel: 'Active preset',
-  presetReadyNote: 'Preset selected — click Generate Config to apply it to your files.',
+  presetReadyNote: 'Preset selected — click Generate Config to apply it.',
   errorPrefix: 'Error',
 }
 
@@ -131,11 +139,15 @@ const ko: UIStrings = {
   previewTab: '미리보기',
   fileStatusTitle: '설정 파일',
   noWorkspace: '열려 있는 워크스페이스 없음',
+  hintClaude: 'Claude Code 세션 메모리 & 코딩 가이드라인',
+  hintAgents: '멀티에이전트 핸드오프 프로토콜 & 역할 경계',
+  hintCursor: 'Cursor / Codex 인라인 규칙 (토큰 절약형)',
+  hintMcp: 'MCP 서버 자동 설정',
+  hintSkills: '슬래시 커맨드  /run  /test  /review …',
+  allFilesPresent: '모든 파일 존재. 재생성하면 업데이트됩니다.',
   configureBtn: '⚡ 설정 파일 생성',
   configuringBtn: '스캔 중…',
   doneBtn: '✓ 완료',
-  teamSyncBtn: '☁ 팀 동기화',
-  proLabel: 'Pro',
   willGenerateTitle: '생성할 파일',
   settingsTitle: '설정',
   uiLang: 'UI 언어',
@@ -168,15 +180,15 @@ const ko: UIStrings = {
   skillsNote: '슬래시 커맨드 (항상 영어)',
   presetsTab: '프리셋',
   searchPlaceholder: '프리셋 검색…',
-  builtInBadge: '기본 제공',
-  starsLabel: '스타',
-  overridesLabel: '덮어쓰기',
-  usePreset: '프리셋 사용',
+  builtInSection: '기본 제공',
+  githubSection: 'GitHub',
+  sortedByStars: '별점 높은 순',
+  githubUnavailable: 'GitHub 연결 불가 — 기본 프리셋만 표시됩니다.',
+  noPresets: '검색 결과 없음.',
   activePreset: '적용 중',
   clearPreset: '해제',
-  noPresets: '검색 결과 없음.',
   selectedPresetLabel: '적용 프리셋',
-  presetReadyNote: '프리셋이 선택되었습니다. 설정 파일 생성을 클릭하면 적용됩니다.',
+  presetReadyNote: '프리셋 선택됨 — 설정 파일 생성을 클릭하면 적용됩니다.',
   errorPrefix: '오류',
 }
 
