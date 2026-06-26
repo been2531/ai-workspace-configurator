@@ -8,6 +8,11 @@ export function buildClaudeMd({ stack, profile }: ComposeInput): string {
   const { language, frameworks, packageManager } = stack
   const fw = frameworks.join(', ') || L.noFw
 
+  // Machine-readable metadata for staleness detection — invisible in rendered Markdown
+  const metaFw = frameworks.filter((f) => !TOOLING_FW.has(f))
+  const meta = JSON.stringify({ lang: language, fw: metaFw, date: new Date().toISOString().split('T')[0] })
+  const metaHeader = `<!-- ai-workspace-configurator ${meta} -->\n`
+
   const typeRule =
     profile?.codingStyle.typeStrictness === 'strict'
       ? L.typeStrict
@@ -34,7 +39,7 @@ export function buildClaudeMd({ stack, profile }: ComposeInput): string {
   const fwRules = frameworkRules(stack, L)
   const aiHints = buildAiWorkflowHints(stack, L)
 
-  return `${L.title}
+  return `${metaHeader}${L.title}
 
 ${L.techStack}
 - ${L.labelLang}: ${language}
@@ -485,6 +490,9 @@ function frameworkRules(
 
   return rules.join('\n')
 }
+
+// Frameworks that don't significantly change generated content — excluded from staleness metadata
+export const TOOLING_FW = new Set(['Tailwind CSS', 'Vite', 'Testing Library'])
 
 // ─── AI Workflow Hints ────────────────────────────────────────────────────────
 // English only — these are instructions for the AI agent
