@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — 2026-06-26
+
+### Added
+- **Project structure section** in `CLAUDE.md` — stack-aware directory layout guide for Next.js, NestJS, Express, Vue/Nuxt, SvelteKit, Django, FastAPI, Go, Rust
+- **Testing section** in `CLAUDE.md` — per-stack test conventions (pytest, Jest/Vitest, Go table tests, Rust `#[cfg(test)]`)
+- **AI workflow hints** section in `CLAUDE.md` — actionable hints for TypeScript type-checking, Next.js route creation, Prisma/Drizzle migration workflow, Go/Rust linter steps
+- **Stack-specific reviewer checklist** in `AGENTS.md` — checks for TS/Next.js/NestJS/Django/FastAPI/Prisma/Go/Rust
+- New slash commands: `/commit` (draft + create git commit), `/fix` (diagnose + fix an error), `/type-check` (TypeScript error sweep)
+
+### Improved
+- Framework rules in `CLAUDE.md` dramatically expanded (Next.js 8 rules, React 6, Vue 6, NestJS 6, Django 6, FastAPI 6, Firebase 6, Express 5, Svelte 5, Nuxt 5)
+
 ## 0.2.0 — 2026-06-26
 
 ### Added

@@ -29,6 +29,11 @@ export function buildClaudeMd({ stack, profile }: ComposeInput): string {
         ? L.cmntJsdoc
         : L.cmntMinimal
 
+  const projectStructure = buildProjectStructure(stack)
+  const testingSection = buildTestingSection(stack, L)
+  const fwRules = frameworkRules(stack, L)
+  const aiHints = buildAiWorkflowHints(stack, L)
+
   return `${L.title}
 
 ${L.techStack}
@@ -38,7 +43,7 @@ ${L.techStack}
 
 ${L.buildCmds}
 ${buildCommands(stack, L)}
-
+${projectStructure ? `\n${L.projectStructure}\n${projectStructure}\n` : ''}
 ${L.codeRules}
 
 ${L.typing}
@@ -54,9 +59,205 @@ ${commentRule}
 ${L.security}
 ${L.secApiKey}
 ${L.secUserInput}
-${frameworkRules(stack, L)}
-`
+${testingSection}${fwRules}${aiHints}`
 }
+
+// ─── Project Structure ────────────────────────────────────────────────────────
+
+function buildProjectStructure({ frameworks, manifests }: ComposeInput['stack']): string {
+  const hasOrm = frameworks.some((f) => ['Prisma', 'Drizzle'].includes(f))
+
+  if (frameworks.includes('Next.js')) {
+    return [
+      '```',
+      'app/                # Route segments (App Router)',
+      '  (auth)/           # Route group: requires authentication',
+      '  api/              # Route handlers (route.ts files)',
+      '  layout.tsx        # Root layout',
+      'components/         # Shared React components',
+      'lib/                # Utilities, helpers, constants',
+      'services/           # Business logic layer',
+      hasOrm ? 'prisma/ or db/      # Schema and migrations' : '',
+      'public/             # Static assets',
+      '```',
+    ].filter(Boolean).join('\n')
+  }
+
+  if (frameworks.includes('NestJS')) {
+    return [
+      '```',
+      'src/',
+      '  app.module.ts     # Root module',
+      '  <domain>/         # Feature module (e.g. users/, auth/, posts/)',
+      '    <domain>.module.ts',
+      '    <domain>.controller.ts',
+      '    <domain>.service.ts',
+      '    dto/            # Request/response DTOs',
+      '  common/           # Guards, interceptors, pipes, decorators',
+      '  config/           # Environment config',
+      'test/               # e2e tests',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Express') || frameworks.includes('Fastify')) {
+    return [
+      '```',
+      'src/',
+      '  app.ts            # App factory + middleware setup',
+      '  server.ts         # Entry point',
+      '  routes/           # Route definitions grouped by domain',
+      '  controllers/      # Request/response handling',
+      '  services/         # Business logic',
+      '  models/           # DB models / schemas',
+      '  middleware/       # Custom middleware',
+      '  config/           # Environment + app config',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Vue') || frameworks.includes('Nuxt')) {
+    const isNuxt = frameworks.includes('Nuxt')
+    return [
+      '```',
+      isNuxt ? 'server/api/         # Nuxt server routes' : '',
+      'composables/        # Shared Composition API logic (use* prefix)',
+      'components/         # Reusable Vue components',
+      'stores/             # Pinia stores',
+      'pages/              # Route-level components',
+      'assets/             # Images, fonts, global CSS',
+      '```',
+    ].filter(Boolean).join('\n')
+  }
+
+  if (frameworks.includes('SvelteKit') || frameworks.includes('Svelte')) {
+    return [
+      '```',
+      'src/',
+      '  routes/           # SvelteKit file-based routes',
+      '    +layout.svelte  # Shared layout',
+      '    +page.svelte    # Page component',
+      '    +page.server.ts # Server-side load + actions',
+      '  lib/              # Shared utilities ($lib alias)',
+      '    components/     # Reusable Svelte components',
+      '    stores/         # Svelte stores',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('Django')) {
+    return [
+      '```',
+      'config/             # Django project settings',
+      '  settings/         # Split settings (base, dev, prod)',
+      '  urls.py           # Root URL config',
+      '<app>/              # Domain app (e.g. users/, products/)',
+      '  models.py         # Data models',
+      '  services.py       # Business logic',
+      '  views.py          # Thin request handlers',
+      '  serializers.py    # DRF serializers (validation)',
+      '  urls.py           # App URL config',
+      'tests/              # Test suite',
+      '```',
+    ].join('\n')
+  }
+
+  if (frameworks.includes('FastAPI')) {
+    return [
+      '```',
+      'app/',
+      '  main.py           # FastAPI app factory + lifespan',
+      '  routers/          # Route handlers grouped by domain',
+      '  schemas/          # Pydantic models (request + response)',
+      '  services/         # Business logic',
+      '  models/           # ORM models',
+      '  dependencies.py   # Shared Depends() functions',
+      '  core/             # Config, security, constants',
+      'tests/              # pytest test suite',
+      '```',
+    ].join('\n')
+  }
+
+  if (manifests.includes('go.mod')) {
+    return [
+      '```',
+      'cmd/                # Application entry points',
+      '  api/main.go',
+      'internal/           # Private application code',
+      '  <domain>/         # Feature package (handler, service, repo)',
+      '  middleware/        # HTTP middleware',
+      'pkg/                # Exported shared utilities',
+      '```',
+    ].join('\n')
+  }
+
+  if (manifests.includes('Cargo.toml')) {
+    return [
+      '```',
+      'src/',
+      '  main.rs or lib.rs # Entry point',
+      '  <module>/         # Domain module',
+      '    mod.rs',
+      'tests/              # Integration tests',
+      'benches/            # Benchmarks',
+      '```',
+    ].join('\n')
+  }
+
+  return ''
+}
+
+// ─── Testing Section ──────────────────────────────────────────────────────────
+
+function buildTestingSection(
+  { language, frameworks, manifests }: ComposeInput['stack'],
+  L: GeneratedLocale['claude'],
+): string {
+  const lines: string[] = []
+
+  if (manifests.includes('package.json')) {
+    const isTs = language === 'TypeScript'
+    const hasVitest = frameworks.includes('Vitest')
+    const hasJest = frameworks.includes('Jest')
+    const hasCypress = frameworks.includes('Cypress')
+    const hasPlaywright = frameworks.includes('Playwright')
+
+    lines.push(`- Co-locate unit tests: \`*.test.${isTs ? 'ts' : 'js'}\` next to source files.`)
+    if (hasVitest) lines.push('- Test runner: **Vitest**. Run with `pnpm run test`.')
+    else if (hasJest) lines.push('- Test runner: **Jest**. Run with `pnpm test`.')
+    else lines.push('- Test runner: Jest or Vitest (check `package.json` scripts).')
+    lines.push('- Mock only external dependencies. Never mock the module under test.')
+    lines.push('- Test behavior, not implementation details.')
+    if (hasCypress) lines.push('- E2E tests in `cypress/e2e/`. Run with `pnpm run cy:run`.')
+    if (hasPlaywright) lines.push('- E2E tests in `tests/` or `e2e/`. Run with `pnpm exec playwright test`.')
+    if (frameworks.includes('React') || frameworks.includes('Next.js')) {
+      lines.push('- Component tests: React Testing Library — query by role/label, not by class.')
+    }
+  } else if (manifests.includes('requirements.txt') || manifests.includes('pyproject.toml') || manifests.includes('Pipfile')) {
+    lines.push('- Tests in `tests/` mirroring the source structure.')
+    lines.push('- Test runner: **pytest**. Run with `pytest` or `python -m pytest`.')
+    lines.push('- Use fixtures for setup/teardown — avoid `setUp`/`tearDown` in test classes.')
+    if (frameworks.includes('Django')) {
+      lines.push('- Django: use `TestCase` for DB tests, `SimpleTestCase` for pure logic.')
+      lines.push('- Factory Boy for test data — avoid raw model creation in tests.')
+    }
+  } else if (manifests.includes('go.mod')) {
+    lines.push('- Tests in `*_test.go` in the same package as source.')
+    lines.push('- Use table-driven tests for multiple input cases.')
+    lines.push('- `testify/assert` for readable assertions.')
+    lines.push('- Integration tests require a running service — use build tags to separate.')
+  } else if (manifests.includes('Cargo.toml')) {
+    lines.push('- Unit tests in `#[cfg(test)]` modules inside the source file.')
+    lines.push('- Integration tests in `tests/` directory (separate crate).')
+    lines.push('- `cargo test -- --nocapture` to see `println!` output during tests.')
+  } else {
+    return `\n${L.testingSection}\n${L.testingGeneric}\n`
+  }
+
+  return `\n${L.testingSection}\n${lines.map(l => l).join('\n')}\n`
+}
+
+// ─── Build Commands ───────────────────────────────────────────────────────────
 
 function buildCommands(
   { manifests, frameworks, packageManager }: ComposeInput['stack'],
@@ -65,7 +266,7 @@ function buildCommands(
   const pm = packageManager === 'pnpm' ? 'pnpm' : packageManager === 'yarn' ? 'yarn' : 'npm'
 
   if (manifests.includes('package.json')) {
-    const hasDev = frameworks.some((f) => ['Vite', 'Next.js', 'React', 'Vue'].includes(f))
+    const hasDev = frameworks.some((f) => ['Vite', 'Next.js', 'React', 'Vue', 'Svelte', 'Nuxt', 'SvelteKit'].includes(f))
     return `\`\`\`bash
 ${hasDev ? `${pm} run dev      ${L.cmdDevServer}\n` : ''}\
 ${pm} run build    ${L.cmdProdBuild}
@@ -124,6 +325,8 @@ go test ./...   ${L.cmdTest}
   return L.enterManually
 }
 
+// ─── Framework Rules ──────────────────────────────────────────────────────────
+
 function frameworkRules(
   { frameworks }: ComposeInput['stack'],
   L: GeneratedLocale['claude'],
@@ -132,16 +335,22 @@ function frameworkRules(
 
   if (frameworks.includes('Next.js')) {
     rules.push(`\n${L.fwNextjs.title}\n${L.fwNextjs.rules}`)
+  } else if (frameworks.includes('Nuxt')) {
+    rules.push(`\n${L.fwNuxt.title}\n${L.fwNuxt.rules}`)
   } else if (frameworks.includes('React')) {
     rules.push(`\n${L.fwReact.title}\n${L.fwReact.rules}`)
+  } else if (frameworks.includes('SvelteKit') || frameworks.includes('Svelte')) {
+    rules.push(`\n${L.fwSvelte.title}\n${L.fwSvelte.rules}`)
   }
 
-  if (frameworks.includes('Vue')) {
+  if (frameworks.includes('Vue') && !frameworks.includes('Nuxt')) {
     rules.push(`\n${L.fwVue.title}\n${L.fwVue.rules}`)
   }
 
   if (frameworks.includes('NestJS')) {
     rules.push(`\n${L.fwNestjs.title}\n${L.fwNestjs.rules}`)
+  } else if (frameworks.includes('Express')) {
+    rules.push(`\n${L.fwExpress.title}\n${L.fwExpress.rules}`)
   }
 
   if (frameworks.includes('Firebase')) {
@@ -163,4 +372,55 @@ function frameworkRules(
   }
 
   return rules.join('\n')
+}
+
+// ─── AI Workflow Hints ────────────────────────────────────────────────────────
+// English only — these are instructions for the AI agent
+
+function buildAiWorkflowHints(
+  { frameworks, language, manifests }: ComposeInput['stack'],
+  L: GeneratedLocale['claude'],
+): string {
+  const hints: string[] = []
+
+  if (language === 'TypeScript' || frameworks.some(f => ['Next.js', 'React', 'Vue', 'NestJS'].includes(f))) {
+    hints.push('- Run `tsc --noEmit` after making changes to verify type correctness before finishing.')
+  }
+
+  if (frameworks.includes('Next.js')) {
+    hints.push('- When adding a new route, always create the directory + `page.tsx` + `loading.tsx` together.')
+    hints.push('- For data mutation, prefer Server Actions over separate API routes when the call originates from a form.')
+    hints.push('- Check `next build` output for bundle size regressions before considering a task complete.')
+  }
+
+  if (frameworks.includes('NestJS')) {
+    hints.push('- When adding a new feature, create the full module scaffold: module → service → controller → DTO.')
+    hints.push('- Register new modules in the parent module\'s `imports` array.')
+  }
+
+  if (frameworks.includes('Django') || frameworks.includes('FastAPI')) {
+    hints.push('- After modifying models or schemas, run and review the migration before writing more code.')
+  }
+
+  if (frameworks.includes('Prisma')) {
+    hints.push('- Schema change workflow: edit `schema.prisma` → `npx prisma migrate dev` → `npx prisma generate`.')
+  }
+
+  if (frameworks.includes('Drizzle')) {
+    hints.push('- Schema change workflow: edit schema → `pnpm run db:generate` → review SQL → `pnpm run db:migrate`.')
+  }
+
+  if (manifests.includes('go.mod')) {
+    hints.push('- Run `go vet ./...` and `golangci-lint run` after changes.')
+    hints.push('- New packages go in `internal/` unless they are meant to be imported externally.')
+  }
+
+  if (manifests.includes('Cargo.toml')) {
+    hints.push('- Run `cargo clippy` after changes. Address all warnings before finishing.')
+    hints.push('- Prefer `?` operator over `.unwrap()` in production code.')
+  }
+
+  if (hints.length === 0) return ''
+
+  return `\n${L.aiWorkflowTitle}\n${hints.join('\n')}\n`
 }
