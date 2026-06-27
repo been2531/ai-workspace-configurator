@@ -46,7 +46,7 @@ export default function App() {
   const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, cursor: false })
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
-  const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string; overrideKeys?: string[] } | null>(null)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
   const [presetQuery, setPresetQuery] = useState('')
   const [presetsLoading, setPresetsLoading] = useState(false)
@@ -560,20 +560,116 @@ interface PreviewTabProps {
   onSkillChange: (name: string) => void
 }
 
+// ─── Diff engine ─────────────────────────────────────────────────────────────
+
+type DiffLine = { type: 'add' | 'remove' | 'equal'; text: string }
+
+function diffLines(oldText: string, newText: string): DiffLine[] {
+  const a = oldText.split('\n')
+  const b = newText.split('\n')
+  const m = a.length, n = b.length
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1])
+
+  const result: DiffLine[] = []
+  let i = m, j = n
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+      result.unshift({ type: 'equal', text: a[i - 1] }); i--; j--
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ type: 'add', text: b[j - 1] }); j--
+    } else {
+      result.unshift({ type: 'remove', text: a[i - 1] }); i--
+    }
+  }
+  return result
+}
+
+function DiffView({ oldText, newText }: { oldText: string; newText: string }) {
+  const isNew = oldText === ''
+  const lines = isNew
+    ? newText.split('\n').map((text): DiffLine => ({ type: 'add', text }))
+    : diffLines(oldText, newText)
+
+  const added = lines.filter(l => l.type === 'add').length
+  const removed = lines.filter(l => l.type === 'remove').length
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-2 text-[10px] font-mono">
+        {added > 0 && <span className="text-emerald-500 dark:text-emerald-400">+{added}</span>}
+        {removed > 0 && <span className="text-red-400 dark:text-red-400">−{removed}</span>}
+        {added === 0 && removed === 0 && <span className="text-gray-400">no changes</span>}
+        {isNew && <span className="text-gray-400">(new file)</span>}
+      </div>
+      <div className="bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/6 rounded-xl overflow-auto max-h-[60vh] text-xs font-mono leading-relaxed">
+        {lines.map((line, idx) => (
+          <div key={idx} className={`flex px-3 py-px ${
+            line.type === 'add'    ? 'bg-emerald-50 dark:bg-emerald-950/30' :
+            line.type === 'remove' ? 'bg-red-50 dark:bg-red-950/30' : ''
+          }`}>
+            <span className={`select-none w-3 shrink-0 mr-3 ${
+              line.type === 'add'    ? 'text-emerald-500 dark:text-emerald-400' :
+              line.type === 'remove' ? 'text-red-400' : 'text-gray-300 dark:text-gray-700'
+            }`}>
+              {line.type === 'add' ? '+' : line.type === 'remove' ? '−' : ' '}
+            </span>
+            <span className={`whitespace-pre-wrap break-all ${
+              line.type === 'add'    ? 'text-emerald-800 dark:text-emerald-200' :
+              line.type === 'remove' ? 'text-red-700 dark:text-red-300' :
+              'text-gray-700 dark:text-gray-300'
+            }`}>{line.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSkillChange }: PreviewTabProps) {
+  const [viewMode, setViewMode] = useState<'raw' | 'diff'>('diff')
+
   if (!preview) {
     return <div className="flex items-center justify-center h-40 text-xs text-gray-500">{s.previewEmpty}</div>
   }
 
   const skillNames = Object.keys(preview.skills)
   const activeSkill = previewSkill || skillNames[0] || ''
-  const previewContent: string = previewFile === 'skills'
+  const newContent: string = previewFile === 'skills'
     ? (preview.skills[activeSkill] ?? '')
-    : (preview[previewFile as keyof Omit<GeneratedPreview, 'skills'>] ?? '')
+    : (preview[previewFile as keyof Omit<GeneratedPreview, 'skills' | 'previous'>] ?? '')
+
+  const PREV_MAP: Record<string, string> = {
+    claudeMd:   preview.previous?.claudeMd   ?? '',
+    agentsMd:   preview.previous?.agentsMd   ?? '',
+    cursorRules: preview.previous?.cursorRules ?? '',
+    mcpConfig:  preview.previous?.mcpConfig  ?? '',
+  }
+  const oldContent = PREV_MAP[previewFile] ?? ''
+  const canDiff = previewFile !== 'skills'
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">{s.previewTitle}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">{s.previewTitle}</p>
+        {canDiff && (
+          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-white/8">
+            {(['diff', 'raw'] as const).map((mode) => (
+              <button key={mode} onClick={() => setViewMode(mode)}
+                className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                  viewMode === mode
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white dark:bg-white/[0.02] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8'
+                }`}>
+                {mode === 'diff' ? 'Diff' : 'Raw'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-1 flex-wrap">
         {STATIC_PREVIEW_FILES.map(({ key, label }) => (
           <button key={key} onClick={() => onFileChange(key)}
@@ -588,6 +684,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
           </button>
         )}
       </div>
+
       {previewFile === 'skills' && skillNames.length > 1 && (
         <div className="flex gap-1 flex-wrap pl-2 border-l-2 border-indigo-300 dark:border-indigo-800/60">
           {skillNames.map((name) => (
@@ -598,9 +695,14 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
           ))}
         </div>
       )}
-      <pre className="bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/6 rounded-xl p-3 text-xs text-gray-700 dark:text-gray-300 font-mono overflow-auto max-h-[60vh] leading-relaxed whitespace-pre-wrap">
-        {previewContent}
-      </pre>
+
+      {canDiff && viewMode === 'diff' ? (
+        <DiffView oldText={oldContent} newText={newContent} />
+      ) : (
+        <pre className="bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/6 rounded-xl p-3 text-xs text-gray-700 dark:text-gray-300 font-mono overflow-auto max-h-[60vh] leading-relaxed whitespace-pre-wrap">
+          {newContent}
+        </pre>
+      )}
     </div>
   )
 }

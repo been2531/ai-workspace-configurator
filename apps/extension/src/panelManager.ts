@@ -124,12 +124,18 @@ export class PanelManager implements vscode.WebviewViewProvider {
 
     const preset = await loadPreset(presetId)
     if (!preset) {
+      vscode.window.showWarningMessage(
+        'This repository has no CLAUDE.md, AGENTS.md, or .cursorrules — nothing to apply.',
+      )
       this.postMessage({ type: 'presetApplied', payload: null })
       return
     }
 
     await saveSelectedPreset(this.context, preset)
-    this.postMessage({ type: 'presetApplied', payload: { id: preset.id, name: preset.name } })
+    this.postMessage({
+      type: 'presetApplied',
+      payload: { id: preset.id, name: preset.name, overrideKeys: Object.keys(preset.overrides) },
+    })
   }
 
   private getHtml(webview: vscode.Webview): string {

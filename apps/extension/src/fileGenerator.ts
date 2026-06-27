@@ -8,6 +8,10 @@ import type {
   GeneratedPreview,
 } from '@ai-workspace-configurator/core'
 
+function readSafe(filePath: string): string {
+  try { return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '' } catch { return '' }
+}
+
 export async function generateWorkspaceFiles(
   workspaceRoot: string,
   stack: DetectedStack,
@@ -15,6 +19,13 @@ export async function generateWorkspaceFiles(
   preset?: CommunityPreset,
   fileSelection?: { mcp?: boolean; skills?: boolean },
 ): Promise<GeneratedPreview> {
+  const previous = {
+    claudeMd:   readSafe(path.join(workspaceRoot, 'CLAUDE.md')),
+    agentsMd:   readSafe(path.join(workspaceRoot, 'AGENTS.md')),
+    cursorRules: readSafe(path.join(workspaceRoot, '.cursorrules')),
+    mcpConfig:  readSafe(path.join(workspaceRoot, '.mcp.json')),
+  }
+
   const rules = composeRules({ stack, profile, preset })
   const mcpJson = JSON.stringify(rules.mcpConfig, null, 2)
 
@@ -65,5 +76,6 @@ export async function generateWorkspaceFiles(
     cursorMdc: rules.cursorMdc,
     mcpConfig: mcpJson,
     skills: rules.skills,
+    previous,
   }
 }

@@ -147,6 +147,12 @@ export interface GeneratedPreview {
   cursorMdc: string
   mcpConfig: string
   skills: Record<string, string>
+  previous: {
+    claudeMd: string
+    agentsMd: string
+    cursorRules: string
+    mcpConfig: string
+  }
 }
 
 // Extension → Webview
@@ -155,7 +161,7 @@ export type ExtensionMessage =
   | { type: 'configured'; payload: { success: true; fileStatus: FileStatus; preview: GeneratedPreview } }
   | { type: 'configured'; payload: { success: false; error: string } }
   | { type: 'presetsResult'; payload: PresetSummary[] }
-  | { type: 'presetApplied'; payload: { id: string; name: string } | null }
+  | { type: 'presetApplied'; payload: { id: string; name: string; overrideKeys: string[] } | null }
 
 // Webview → Extension
 export type WebviewMessage =
