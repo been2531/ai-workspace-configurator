@@ -624,10 +624,11 @@ type PresetSubTab = 'builtin' | 'github'
 function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, presetsLoading, onSearch, onSelect, onGenerate }: PresetsTabProps) {
   const [subTab, setSubTab] = useState<PresetSubTab>('builtin')
   const isSearching = searchQuery.trim().length > 0
-  const rateLimitNotice = presets.find((p) => p.id === '__rate_limited__')
+  const ERROR_IDS = new Set(['__rate_limited__', '__connection_error__', '__api_error__'])
+  const errorNotice = presets.find((p) => ERROR_IDS.has(p.id))
   const builtIn = presets.filter((p) => p.isBuiltIn)
-  const github = presets.filter((p) => !p.isBuiltIn && p.id !== '__rate_limited__')
-  const displayList = isSearching ? [...presets].filter((p) => p.id !== '__rate_limited__').sort((a, b) => b.stars - a.stars) : subTab === 'builtin' ? builtIn : github
+  const github = presets.filter((p) => !p.isBuiltIn && !ERROR_IDS.has(p.id))
+  const displayList = isSearching ? [...presets].filter((p) => !ERROR_IDS.has(p.id)).sort((a, b) => b.stars - a.stars) : subTab === 'builtin' ? builtIn : github
 
   return (
     <div className="flex flex-col gap-3">
@@ -683,15 +684,15 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
         </div>
       )}
 
-      {subTab === 'github' && rateLimitNotice && (
+      {subTab === 'github' && errorNotice && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-amber-300 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/25 text-[11px] text-amber-700 dark:text-amber-300">
           <span className="shrink-0 mt-px">⚠</span>
-          <span>{rateLimitNotice.description}</span>
+          <span>{errorNotice.description}</span>
         </div>
       )}
       {presetsLoading && displayList.length === 0 ? (
         <div className="flex items-center justify-center h-28 text-xs text-gray-400 animate-pulse">{s.githubLoadingLabel}</div>
-      ) : displayList.length === 0 && !rateLimitNotice ? (
+      ) : displayList.length === 0 && !errorNotice ? (
         <div className="flex items-center justify-center h-28 text-xs text-gray-400 dark:text-gray-500">
           {subTab === 'github' && !isSearching ? s.githubUnavailable : s.noPresets}
         </div>

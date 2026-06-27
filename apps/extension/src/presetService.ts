@@ -178,23 +178,16 @@ async function fetchGitHubPresets(query: string, token: string): Promise<PresetS
     )
 
     if (res.status === 403 || res.status === 429) {
-      // Rate limited — surface as a special marker so the UI can show a helpful message
-      const rateLimitPreset: PresetSummary = {
-        id: '__rate_limited__',
-        name: '',
-        author: '',
-        description: token
+      return [makeErrorPreset('__rate_limited__',
+        token
           ? 'GitHub API rate limit reached. Please wait a moment and try again.'
           : 'GitHub API rate limit reached (10 req/min). Add a GitHub token in VS Code Settings → AI Workspace Configurator → Github Token to unlock higher limits.',
-        tags: [],
-        stars: -1,
-        isBuiltIn: false,
-        overrideKeys: [],
-      }
-      return [rateLimitPreset]
+      )]
     }
 
-    if (!res.ok) return []
+    if (!res.ok) {
+      return [makeErrorPreset('__api_error__', `GitHub API error: ${res.status} ${res.statusText}`)]
+    }
 
     const data = await res.json() as { items: GitHubRepo[] }
     const presets = data.items.map(repoToSummary)
@@ -204,9 +197,16 @@ async function fetchGitHubPresets(query: string, token: string): Promise<PresetS
     }
 
     return presets
-  } catch {
-    return []
+  } catch (err) {
+    console.error('[AI Workspace] GitHub fetch failed:', err)
+    return [makeErrorPreset('__connection_error__',
+      `GitHub connection failed: ${err instanceof Error ? err.message : String(err)}`,
+    )]
   }
+}
+
+function makeErrorPreset(id: string, description: string): PresetSummary {
+  return { id, name: '', author: '', description, tags: [], stars: -1, isBuiltIn: false, overrideKeys: [] }
 }
 
 // ─── Load single preset ───────────────────────────────────────────────────────
