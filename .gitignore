@@ -21,3 +21,8 @@ TASKS.md
 
 # VS Code 자동 생성 파일
 .vscode/extensions.json
+
+# 확장 프로그램이 생성하는 파일 (루트 레벨)
+/AGENTS.md
+/.mcp.json
+/.claude/
