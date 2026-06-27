@@ -43,7 +43,7 @@ export default function App() {
   const [previewFile, setPreviewFile] = useState<PreviewFile>('claudeMd')
   const [previewSkill, setPreviewSkill] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
-  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true })
+  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, cursor: false })
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
@@ -59,8 +59,13 @@ export default function App() {
   function toggleTheme() {
     const next: Theme = isDark ? 'light' : 'dark'
     setTheme(next)
+    document.documentElement.classList.toggle('dark', next === 'dark')
     try { localStorage.setItem('aiw-theme', next) } catch { /* noop */ }
   }
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
 
   useEffect(() => {
     postMessage({ command: 'ready' })
@@ -158,9 +163,7 @@ export default function App() {
   const cursorEnabled = profile.tools?.cursor ?? false
 
   return (
-    // dark class on root enables Tailwind's dark: variant throughout the subtree
-    <div className={isDark ? 'dark' : ''}>
-      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col text-sm transition-colors duration-150">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col text-sm transition-colors duration-150">
 
         {/* Header */}
         <header className="px-5 pt-5 pb-3 flex items-start justify-between">
@@ -195,8 +198,8 @@ export default function App() {
         {/* Tab bar */}
         <nav className="flex border-b border-gray-200 dark:border-white/8 px-5">
           {([
-            ['home', s.homeTab],
             ['settings', s.settingsTab],
+            ['home', s.homeTab],
             ['presets', s.presetsTab],
             ['preview', s.previewTab],
             ['guide', s.guideTab],
@@ -241,7 +244,6 @@ export default function App() {
               errorMsg={errorMsg}
               fileStatus={fileStatus}
               selectedPreset={selectedPreset}
-              cursorEnabled={cursorEnabled}
               fileSelection={fileSelection}
               onFileSelectionChange={setFileSelection}
               onGenerateClick={handleGenerateClick}
@@ -293,13 +295,11 @@ export default function App() {
           <GenerateConfirmModal
             s={s}
             fileSelection={fileSelection}
-            cursorEnabled={cursorEnabled}
             selectedPreset={selectedPreset}
             onConfirm={handleConfirmGenerate}
             onCancel={() => setShowConfirmModal(false)}
           />
         )}
-      </div>
     </div>
   )
 }
@@ -308,20 +308,18 @@ export default function App() {
 
 interface GenerateConfirmModalProps {
   s: ReturnType<typeof t>
-  fileSelection: { mcp: boolean; skills: boolean }
-  cursorEnabled: boolean
+  fileSelection: { mcp: boolean; skills: boolean; cursor: boolean }
   selectedPreset: { id: string; name: string } | null
   onConfirm: () => void
   onCancel: () => void
 }
 
-function GenerateConfirmModal({ s, fileSelection, cursorEnabled, selectedPreset, onConfirm, onCancel }: GenerateConfirmModalProps) {
+function GenerateConfirmModal({ s, fileSelection, selectedPreset, onConfirm, onCancel }: GenerateConfirmModalProps) {
   const files = [
     'CLAUDE.md', 'AGENTS.md',
     fileSelection.mcp && '.mcp.json',
     fileSelection.skills && '.claude/skills/',
-    cursorEnabled && '.cursorrules',
-    cursorEnabled && '.cursor/rules/project.mdc',
+    fileSelection.cursor && '.cursorrules',
   ].filter(Boolean) as string[]
 
   return (
@@ -361,8 +359,7 @@ function GenerateConfirmModal({ s, fileSelection, cursorEnabled, selectedPreset,
 
 type FileRowEntry =
   | { kind: 'mandatory'; label: string; hint: string; exists: boolean }
-  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills'; checked: boolean }
-  | { kind: 'optional-cursor'; label: string; hint: string; exists: boolean; active: boolean }
+  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills' | 'cursor'; checked: boolean }
 
 interface HomeTabProps {
   s: ReturnType<typeof t>
@@ -370,21 +367,20 @@ interface HomeTabProps {
   errorMsg: string | undefined
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
-  cursorEnabled: boolean
-  fileSelection: { mcp: boolean; skills: boolean }
-  onFileSelectionChange: (sel: { mcp: boolean; skills: boolean }) => void
+  fileSelection: { mcp: boolean; skills: boolean; cursor: boolean }
+  onFileSelectionChange: (sel: { mcp: boolean; skills: boolean; cursor: boolean }) => void
   onGenerateClick: () => void
   onGoToPresets: () => void
   onGoToSettings: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, fileSelection, onFileSelectionChange, onGenerateClick, onGoToPresets, onGoToSettings }: HomeTabProps) {
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, fileSelection, onFileSelectionChange, onGenerateClick, onGoToPresets, onGoToSettings }: HomeTabProps) {
   const fileRows: FileRowEntry[] = [
     { kind: 'mandatory', label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
     { kind: 'mandatory', label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
     { kind: 'optional-toggle', label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp, selKey: 'mcp', checked: fileSelection.mcp },
     { kind: 'optional-toggle', label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills, selKey: 'skills', checked: fileSelection.skills },
-    { kind: 'optional-cursor', label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, active: cursorEnabled },
+    { kind: 'optional-toggle', label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, selKey: 'cursor', checked: fileSelection.cursor },
   ]
 
   return (
@@ -409,7 +405,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
                 <div title={s.fileMandatory} className="w-4 h-4 rounded-sm border border-gray-300 dark:border-gray-600/30 bg-gray-100 dark:bg-gray-700/20 flex items-center justify-center shrink-0 cursor-not-allowed">
                   <span className="text-gray-400 dark:text-gray-500 text-[9px] leading-none select-none">✓</span>
                 </div>
-              ) : row.kind === 'optional-toggle' ? (
+              ) : (
                 <button
                   onClick={() => onFileSelectionChange({ ...fileSelection, [row.selKey]: !row.checked })}
                   className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
@@ -420,8 +416,6 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
                 >
                   {row.checked && <span className="text-indigo-600 dark:text-indigo-200 text-[9px] leading-none select-none">✓</span>}
                 </button>
-              ) : (
-                <div className="w-4 h-4 shrink-0" />
               )}
 
               <span className={`text-[8px] shrink-0 ${row.exists ? 'text-emerald-500 dark:text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`}>
@@ -437,12 +431,6 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
                   {s.fileMandatory}
                 </span>
               )}
-              {row.kind === 'optional-cursor' && !row.active && (
-                <span className="text-[9px] px-1.5 py-px rounded-full bg-gray-100 dark:bg-white/[0.05] text-gray-500 border border-gray-200 dark:border-white/8 shrink-0">
-                  {s.cursorOptional}
-                </span>
-              )}
-
               <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">{row.hint}</span>
             </div>
           ))}
