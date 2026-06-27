@@ -16,7 +16,7 @@ const vscodeApi =
   typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null
 const postMessage = (msg: unknown) => vscodeApi?.postMessage(msg)
 
-type Tab = 'home' | 'presets' | 'settings' | 'preview' | 'guide'
+type Tab = 'home' | 'presets' | 'settings' | 'preview' | 'docs'
 type Status = 'idle' | 'scanning' | 'done' | 'error'
 type Theme = 'dark' | 'light'
 type PreviewFile = 'claudeMd' | 'agentsMd' | 'cursorRules' | 'mcpConfig' | 'skills'
@@ -34,7 +34,7 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => {
     try { return (localStorage.getItem('aiw-theme') as Theme) ?? 'dark' } catch { return 'dark' }
   })
-  const [tab, setTab] = useState<Tab>('home')
+  const [tab, setTab] = useState<Tab>('settings')
   const [status, setStatus] = useState<Status>('idle')
   const [errorMsg, setErrorMsg] = useState<string>()
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE)
@@ -179,7 +179,7 @@ export default function App() {
             >
               {isDark ? '☀︎' : '☽'}
             </button>
-            {(['en', 'ko'] as Locale[]).map((loc) => (
+            {(['en', 'ko'] as const).map((loc) => (
               <button
                 key={loc}
                 onClick={() => setLocale(loc)}
@@ -202,7 +202,7 @@ export default function App() {
             ['home', s.homeTab],
             ['presets', s.presetsTab],
             ['preview', s.previewTab],
-            ['guide', s.guideTab],
+            ['docs', s.docsTab],
           ] as [Tab, string][]).map(([id, label]) => (
             <button
               key={id}
@@ -230,7 +230,7 @@ export default function App() {
             {tab === 'home' ? s.tabDescHome
               : tab === 'settings' ? s.tabDescSettings
               : tab === 'presets' ? s.tabDescPresets
-              : tab === 'guide' ? s.tabDescGuide
+              : tab === 'docs' ? s.tabDescDocs
               : s.tabDescPreview}
           </p>
         </div>
@@ -275,7 +275,7 @@ export default function App() {
               onSkillChange={setPreviewSkill}
             />
           )}
-          {tab === 'guide' && <GuideTab locale={locale} />}
+          {tab === 'docs' && <GuideTab locale={locale} />}
           {tab === 'presets' && (
             <PresetsTab
               s={s}
@@ -724,7 +724,9 @@ interface PresetsTabProps {
 type PresetSubTab = 'builtin' | 'github'
 
 function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, presetsLoading, onSearch, onSelect, onGenerate }: PresetsTabProps) {
-  const [subTab, setSubTab] = useState<PresetSubTab>('builtin')
+  const [subTab, setSubTab] = useState<PresetSubTab>(
+    selectedPreset?.id.startsWith('github:') ? 'github' : 'builtin'
+  )
   const isSearching = searchQuery.trim().length > 0
   const ERROR_IDS = new Set(['__rate_limited__', '__connection_error__', '__api_error__'])
   const errorNotice = presets.find((p) => ERROR_IDS.has(p.id))

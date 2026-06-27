@@ -75,8 +75,8 @@ export interface UIStrings {
   selectedPresetLabel: string
   presetReadyNote: string
   // Guide tab
-  guideTab: string
-  tabDescGuide: string
+  docsTab: string
+  tabDescDocs: string
   // Tab descriptions
   tabDescHome: string
   tabDescPresets: string
@@ -163,8 +163,8 @@ const en: UIStrings = {
   clearPreset: 'Clear',
   selectedPresetLabel: 'Active preset',
   presetReadyNote: 'Preset selected — click Generate Config to apply it.',
-  guideTab: 'Guide',
-  tabDescGuide: 'How each generated file works and tips for effective AI collaboration.',
+  docsTab: 'Docs',
+  tabDescDocs: 'How each generated file works and tips for effective AI collaboration.',
   tabDescHome: 'Select files to generate, then run the AI workspace configuration.',
   tabDescPresets: 'Apply pre-built rule templates. Browse built-in or GitHub community presets.',
   tabDescSettings: 'Customize coding style, agent behavior, and tools. Settings affect CLAUDE.md content.',
@@ -244,8 +244,8 @@ const ko: UIStrings = {
   clearPreset: '해제',
   selectedPresetLabel: '적용 프리셋',
   presetReadyNote: '프리셋 선택됨 — 설정 파일 생성을 클릭하면 적용됩니다.',
-  guideTab: '가이드',
-  tabDescGuide: '생성된 각 파일의 역할과 AI와 효과적으로 협업하는 방법을 알아보세요.',
+  docsTab: 'Docs',
+  tabDescDocs: '생성된 각 파일의 역할과 AI와 효과적으로 협업하는 방법을 알아보세요.',
   tabDescHome: '생성할 파일을 선택하고 AI 워크스페이스 설정을 실행합니다.',
   tabDescPresets: '프리셋 템플릿을 적용하세요. 기본 제공 또는 GitHub 커뮤니티 프리셋을 탐색하세요.',
   tabDescSettings: '코딩 스타일, 에이전트 동작, 도구를 커스터마이즈하세요. 설정값은 CLAUDE.md 내용에 반영됩니다.',
