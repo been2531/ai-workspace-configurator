@@ -22,6 +22,14 @@ export interface UIStrings {
   configuringBtn: string
   doneBtn: string
   willGenerateTitle: string
+  // Home — settings link
+  settingsHint: string
+  goToSettings: string
+  // Generate confirm modal
+  confirmTitle: string
+  confirmDesc: string
+  confirmBtn: string
+  cancelBtn: string
   // Settings
   settingsTitle: string
   uiLang: string
@@ -94,7 +102,7 @@ export interface UIStrings {
 const en: UIStrings = {
   title: 'AI Workspace Configurator',
   subtitle: 'Auto-generate Claude Code & Codex optimization files.',
-  homeTab: 'Home',
+  homeTab: 'Run',
   settingsTab: 'Settings',
   previewTab: 'Preview',
   fileStatusTitle: 'Config files',
@@ -109,6 +117,12 @@ const en: UIStrings = {
   configuringBtn: 'Scanning…',
   doneBtn: '✓ Done',
   willGenerateTitle: 'Will generate',
+  settingsHint: 'Settings shape CLAUDE.md content',
+  goToSettings: 'Change settings →',
+  confirmTitle: 'Generate Config Files',
+  confirmDesc: 'The following files will be written to your workspace:',
+  confirmBtn: 'Generate',
+  cancelBtn: 'Cancel',
   settingsTitle: 'Settings',
   uiLang: 'UI language',
   generatedLang: 'Generated file language',
@@ -151,9 +165,9 @@ const en: UIStrings = {
   presetReadyNote: 'Preset selected — click Generate Config to apply it.',
   guideTab: 'Guide',
   tabDescGuide: 'How each generated file works and tips for effective AI collaboration.',
-  tabDescHome: 'Check config file status and generate AI optimization files for this project.',
+  tabDescHome: 'Select files to generate, then run the AI workspace configuration.',
   tabDescPresets: 'Apply pre-built rule templates. Browse built-in or GitHub community presets.',
-  tabDescSettings: 'Customize coding style, agent behavior, and tools. Save before generating.',
+  tabDescSettings: 'Customize coding style, agent behavior, and tools. Settings affect CLAUDE.md content.',
   tabDescPreview: 'Preview the last generated configuration files.',
   toolsTitle: 'Tools  (Optional)',
   toolsNote: 'Only selected tools will have config files generated.',
@@ -169,7 +183,7 @@ const en: UIStrings = {
 const ko: UIStrings = {
   title: 'AI Workspace Configurator',
   subtitle: 'Claude Code & Codex 최적화 파일을 자동으로 생성합니다.',
-  homeTab: '홈',
+  homeTab: '실행',
   settingsTab: '설정',
   previewTab: '미리보기',
   fileStatusTitle: '설정 파일',
@@ -184,6 +198,12 @@ const ko: UIStrings = {
   configuringBtn: '스캔 중…',
   doneBtn: '✓ 완료',
   willGenerateTitle: '생성할 파일',
+  settingsHint: '설정값이 CLAUDE.md 내용에 반영됩니다',
+  goToSettings: '설정 변경 →',
+  confirmTitle: '설정 파일 생성',
+  confirmDesc: '다음 파일이 워크스페이스에 작성됩니다:',
+  confirmBtn: '생성',
+  cancelBtn: '취소',
   settingsTitle: '설정',
   uiLang: 'UI 언어',
   generatedLang: '생성 파일 언어',
@@ -226,9 +246,9 @@ const ko: UIStrings = {
   presetReadyNote: '프리셋 선택됨 — 설정 파일 생성을 클릭하면 적용됩니다.',
   guideTab: '가이드',
   tabDescGuide: '생성된 각 파일의 역할과 AI와 효과적으로 협업하는 방법을 알아보세요.',
-  tabDescHome: '설정 파일 상태를 확인하고 이 프로젝트의 AI 최적화 파일을 생성하세요.',
+  tabDescHome: '생성할 파일을 선택하고 AI 워크스페이스 설정을 실행합니다.',
   tabDescPresets: '프리셋 템플릿을 적용하세요. 기본 제공 또는 GitHub 커뮤니티 프리셋을 탐색하세요.',
-  tabDescSettings: '코딩 스타일, 에이전트 동작, 도구를 커스터마이즈하세요. 생성 전에 저장하세요.',
+  tabDescSettings: '코딩 스타일, 에이전트 동작, 도구를 커스터마이즈하세요. 설정값은 CLAUDE.md 내용에 반영됩니다.',
   tabDescPreview: '마지막으로 생성된 설정 파일을 미리봅니다.',
   toolsTitle: '사용 도구  (선택사항)',
   toolsNote: '선택한 도구만 설정 파일이 생성됩니다.',

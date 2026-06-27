@@ -40,6 +40,7 @@ export default function App() {
   const [previewSkill, setPreviewSkill] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
   const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true })
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
@@ -100,13 +101,21 @@ export default function App() {
   }
 
   function handleConfigure() {
-    // Auto-save current settings so re-configuration always uses the latest selections
     const updated: UserProfile = { ...profile, locale }
     setProfile(updated)
     postMessage({ command: 'saveProfile', payload: updated })
     setStatus('scanning')
     setErrorMsg(undefined)
     postMessage({ command: 'configure', fileSelection })
+  }
+
+  function handleGenerateClick() {
+    setShowConfirmModal(true)
+  }
+
+  function handleConfirmGenerate() {
+    setShowConfirmModal(false)
+    handleConfigure()
   }
 
   function handleSaveSettings() {
@@ -150,13 +159,15 @@ export default function App() {
     setProfile((p) => ({ ...p, agentMode: { ...p.agentMode, [key]: value } }))
   }
 
+  const cursorEnabled = profile.tools?.cursor ?? false
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col text-sm">
       {/* Header */}
       <header className="px-5 pt-5 pb-3 flex items-start justify-between">
         <div>
           <h1 className="text-base font-bold tracking-tight leading-tight">{s.title}</h1>
-          <p className="text-xs text-gray-500 mt-0.5">{s.subtitle}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{s.subtitle}</p>
         </div>
         <div className="flex gap-1 mt-0.5 shrink-0">
           {(['en', 'ko'] as Locale[]).map((loc) => (
@@ -175,12 +186,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tab bar */}
+      {/* Tab bar — Run → Settings → Presets → Preview → Guide */}
       <nav className="flex border-b border-white/8 px-5">
         {([
           ['home', s.homeTab],
-          ['presets', s.presetsTab],
           ['settings', s.settingsTab],
+          ['presets', s.presetsTab],
           ['preview', s.previewTab],
           ['guide', s.guideTab],
         ] as [Tab, string][]).map(([id, label]) => (
@@ -190,7 +201,7 @@ export default function App() {
             className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors ${
               tab === id
                 ? 'border-indigo-500 text-white'
-                : 'border-transparent text-gray-500 hover:text-gray-300'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
             {label}
@@ -206,10 +217,10 @@ export default function App() {
 
       {/* Tab description */}
       <div className="px-5 pt-2 pb-0">
-        <p className="text-[11px] text-gray-600 leading-snug">
+        <p className="text-[11px] text-gray-500 leading-snug">
           {tab === 'home' ? s.tabDescHome
-            : tab === 'presets' ? s.tabDescPresets
             : tab === 'settings' ? s.tabDescSettings
+            : tab === 'presets' ? s.tabDescPresets
             : tab === 'guide' ? s.tabDescGuide
             : s.tabDescPreview}
         </p>
@@ -224,11 +235,12 @@ export default function App() {
             errorMsg={errorMsg}
             fileStatus={fileStatus}
             selectedPreset={selectedPreset}
-            cursorEnabled={profile.tools?.cursor ?? false}
+            cursorEnabled={cursorEnabled}
             fileSelection={fileSelection}
             onFileSelectionChange={setFileSelection}
-            onConfigure={handleConfigure}
+            onGenerateClick={handleGenerateClick}
             onGoToPresets={() => handleTabChange('presets')}
+            onGoToSettings={() => handleTabChange('settings')}
           />
         )}
         {tab === 'settings' && (
@@ -268,15 +280,98 @@ export default function App() {
             presetsLoading={presetsLoading}
             onSearch={handlePresetSearch}
             onSelect={handlePresetSelect}
-            onGenerate={handleConfigure}
+            onGenerate={handleGenerateClick}
           />
         )}
       </main>
+
+      {/* Generate confirm modal — bottom sheet */}
+      {showConfirmModal && (
+        <GenerateConfirmModal
+          s={s}
+          fileSelection={fileSelection}
+          cursorEnabled={cursorEnabled}
+          selectedPreset={selectedPreset}
+          onConfirm={handleConfirmGenerate}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
     </div>
   )
 }
 
-// ─── Home Tab ────────────────────────────────────────────────────────────────
+// ─── Generate Confirm Modal ───────────────────────────────────────────────────
+
+interface GenerateConfirmModalProps {
+  s: ReturnType<typeof t>
+  fileSelection: { mcp: boolean; skills: boolean }
+  cursorEnabled: boolean
+  selectedPreset: { id: string; name: string } | null
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function GenerateConfirmModal({ s, fileSelection, cursorEnabled, selectedPreset, onConfirm, onCancel }: GenerateConfirmModalProps) {
+  const files = [
+    'CLAUDE.md',
+    'AGENTS.md',
+    fileSelection.mcp && '.mcp.json',
+    fileSelection.skills && '.claude/skills/',
+    cursorEnabled && '.cursorrules',
+    cursorEnabled && '.cursor/rules/project.mdc',
+  ].filter(Boolean) as string[]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-[2px]"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full bg-gray-900 border-t border-white/10 rounded-t-2xl px-5 pt-5 pb-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-8 h-1 bg-white/10 rounded-full mx-auto mb-4" />
+        <h3 className="text-sm font-bold text-white mb-1">{s.confirmTitle}</h3>
+        <p className="text-[11px] text-gray-400 mb-3">{s.confirmDesc}</p>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {files.map((f) => (
+            <span
+              key={f}
+              className="text-[10px] px-2 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-md font-mono"
+            >
+              {f}
+            </span>
+          ))}
+        </div>
+
+        {selectedPreset && (
+          <div className="flex items-center gap-1.5 mb-4 text-[11px] text-emerald-400/90">
+            <span className="text-[9px]">✓</span>
+            <span>Preset: {selectedPreset.name}</span>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-colors"
+          >
+            {s.confirmBtn}
+          </button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 bg-white/[0.06] hover:bg-white/10 text-gray-300 text-xs font-semibold rounded-xl transition-colors"
+          >
+            {s.cancelBtn}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Home Tab (Run Tab) ───────────────────────────────────────────────────────
 
 type FileRowKind = 'mandatory' | 'optional-toggle' | 'optional-cursor'
 
@@ -294,11 +389,12 @@ interface HomeTabProps {
   cursorEnabled: boolean
   fileSelection: { mcp: boolean; skills: boolean }
   onFileSelectionChange: (sel: { mcp: boolean; skills: boolean }) => void
-  onConfigure: () => void
+  onGenerateClick: () => void
   onGoToPresets: () => void
+  onGoToSettings: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, fileSelection, onFileSelectionChange, onConfigure, onGoToPresets }: HomeTabProps) {
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, fileSelection, onFileSelectionChange, onGenerateClick, onGoToPresets, onGoToSettings }: HomeTabProps) {
   const fileRows: FileRowEntry[] = [
     { kind: 'mandatory', label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
     { kind: 'mandatory', label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
@@ -325,10 +421,10 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
 
       {/* File status */}
       <section>
-        <p className="text-[10px] text-gray-600 font-semibold mb-2 uppercase tracking-widest">
+        <p className="text-[10px] text-gray-500 font-semibold mb-2 uppercase tracking-widest">
           {s.fileStatusTitle}
         </p>
-        <div className="border border-white/6 rounded-xl overflow-hidden divide-y divide-white/[0.04]">
+        <div className="border border-white/8 rounded-xl overflow-hidden divide-y divide-white/[0.05]">
           {fileRows.map((row) => (
             <div
               key={row.label}
@@ -336,7 +432,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
                 row.exists ? 'bg-emerald-950/20' : 'bg-transparent'
               }`}
             >
-              {/* Left control: locked checkbox (mandatory) or interactive checkbox (optional-toggle) or spacer */}
+              {/* Left control */}
               {row.kind === 'mandatory' ? (
                 <div
                   title={s.fileMandatory}
@@ -361,40 +457,52 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
               )}
 
               {/* Existence dot */}
-              <span className={`text-[8px] shrink-0 ${row.exists ? 'text-emerald-400' : 'text-gray-700'}`}>
+              <span className={`text-[8px] shrink-0 ${row.exists ? 'text-emerald-400' : 'text-gray-600'}`}>
                 {row.exists ? '●' : '○'}
               </span>
 
               {/* Filename */}
-              <span className={`font-mono text-xs shrink-0 w-[6.5rem] ${row.exists ? 'text-emerald-300' : 'text-gray-500'}`}>
+              <span className={`font-mono text-xs shrink-0 w-[6.5rem] ${row.exists ? 'text-emerald-300' : 'text-gray-400'}`}>
                 {row.label}
               </span>
 
               {/* Badge */}
               {row.kind === 'mandatory' && (
-                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.03] text-gray-700 border border-white/6 shrink-0">
+                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.04] text-gray-500 border border-white/8 shrink-0">
                   {s.fileMandatory}
                 </span>
               )}
               {row.kind === 'optional-cursor' && !row.active && (
-                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.05] text-gray-600 border border-white/8 shrink-0">
+                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.05] text-gray-500 border border-white/8 shrink-0">
                   {s.cursorOptional}
                 </span>
               )}
 
               {/* Hint */}
-              <span className="text-[11px] text-gray-600 leading-snug">{row.hint}</span>
+              <span className="text-[11px] text-gray-400 leading-snug">{row.hint}</span>
             </div>
           ))}
         </div>
+
         {allExist && (
-          <p className="text-[11px] text-gray-600 mt-2">{s.allFilesPresent}</p>
+          <p className="text-[11px] text-gray-400 mt-2">{s.allFilesPresent}</p>
         )}
+
+        {/* Settings link */}
+        <div className="flex items-center justify-between mt-2 px-0.5">
+          <span className="text-[10px] text-gray-600">{s.settingsHint}</span>
+          <button
+            onClick={onGoToSettings}
+            className="text-[10px] text-indigo-400/70 hover:text-indigo-300 transition-colors"
+          >
+            {s.goToSettings}
+          </button>
+        </div>
       </section>
 
       {/* Error */}
       {status === 'error' && errorMsg && (
-        <div className="rounded-xl border border-red-800/50 bg-red-950/30 px-3 py-2.5 text-xs text-red-400">
+        <div className="rounded-xl border border-red-800/50 bg-red-950/30 px-3 py-2.5 text-xs text-red-300">
           <span className="font-semibold">{s.errorPrefix}: </span>
           {errorMsg}
         </div>
@@ -402,7 +510,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
 
       {/* Generate button */}
       <button
-        onClick={onConfigure}
+        onClick={onGenerateClick}
         disabled={status === 'scanning'}
         className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${
           status === 'done'
@@ -549,7 +657,7 @@ function SettingsTab({
       </Section>
 
       <Section title={s.toolsTitle}>
-        <p className="text-[11px] text-gray-600 -mt-0.5">{s.toolsNote}</p>
+        <p className="text-[11px] text-gray-400 -mt-0.5">{s.toolsNote}</p>
         <Toggle
           label={s.cursorToolLabel}
           checked={profile.tools?.cursor ?? false}
@@ -585,7 +693,7 @@ interface PreviewTabProps {
 function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSkillChange }: PreviewTabProps) {
   if (!preview) {
     return (
-      <div className="flex items-center justify-center h-40 text-xs text-gray-600">
+      <div className="flex items-center justify-center h-40 text-xs text-gray-400">
         {s.previewEmpty}
       </div>
     )
@@ -600,7 +708,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest">{s.previewTitle}</p>
+      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest">{s.previewTitle}</p>
 
       <div className="flex gap-1 flex-wrap">
         {STATIC_PREVIEW_FILES.map(({ key, label }) => (
@@ -610,7 +718,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
             className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
               previewFile === key
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10'
             }`}
           >
             {label}
@@ -622,7 +730,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
             className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
               previewFile === 'skills'
                 ? 'bg-indigo-600 text-white'
-                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                : 'bg-white/5 text-gray-300 hover:bg-white/10'
             }`}
           >
             {s.skillsLabel}
@@ -639,7 +747,7 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
               className={`px-2 py-0.5 rounded text-xs font-mono transition-colors ${
                 activeSkill === name
                   ? 'bg-indigo-800 text-indigo-100'
-                  : 'bg-white/3 text-gray-500 hover:text-gray-300'
+                  : 'bg-white/3 text-gray-400 hover:text-gray-200'
               }`}
             >
               /{name}
@@ -679,7 +787,6 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
   const builtIn = presets.filter((p) => p.isBuiltIn)
   const github = presets.filter((p) => !p.isBuiltIn)
 
-  // Search: unified across both tabs, sorted by stars
   const searchResults = isSearching
     ? [...presets].sort((a, b) => b.stars - a.stars)
     : null
@@ -696,7 +803,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-indigo-400 text-[10px] shrink-0">✓</span>
             <span className="text-xs text-indigo-200 font-medium truncate">{selectedPreset.name}</span>
-            <span className="text-[10px] text-indigo-500 shrink-0">{s.activePreset}</span>
+            <span className="text-[10px] text-indigo-400 shrink-0">{s.activePreset}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -707,7 +814,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
             </button>
             <button
               onClick={() => onSelect(null)}
-              className="text-[11px] text-gray-600 hover:text-gray-400 transition-colors"
+              className="text-[11px] text-gray-400 hover:text-gray-300 transition-colors"
             >
               {s.clearPreset}
             </button>
@@ -722,7 +829,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
         onChange={(e) => onSearch(e.target.value)}
         placeholder={s.searchPlaceholder}
         className="w-full bg-white/[0.04] border border-white/8 rounded-xl px-3 py-2 text-xs
-          text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/60 transition-colors"
+          text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500/60 transition-colors"
       />
 
       {/* Sub-tabs (hidden while searching) */}
@@ -738,14 +845,14 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
                 className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
                   subTab === id
                     ? 'border-indigo-500 text-white'
-                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                    : 'border-transparent text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {id === 'github' && <span className="text-amber-400/70">★</span>}
                 {label}
                 {count > 0 && (
                   <span className={`text-[10px] px-1 py-px rounded-full ${
-                    subTab === id ? 'bg-indigo-700 text-indigo-200' : 'bg-white/8 text-gray-600'
+                    subTab === id ? 'bg-indigo-700 text-indigo-200' : 'bg-white/8 text-gray-500'
                   }`}>
                     {count}
                   </span>
@@ -754,7 +861,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
             )
           })}
           {!isSearching && subTab === 'github' && github.length > 0 && (
-            <span className="ml-auto self-center text-[10px] text-gray-700 pr-1">
+            <span className="ml-auto self-center text-[10px] text-gray-500 pr-1">
               {s.sortedByStars}
             </span>
           )}
@@ -763,7 +870,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
 
       {/* Card list */}
       {presetsLoading && displayList.length === 0 ? (
-        <div className="flex items-center justify-center h-28 text-xs text-gray-600 animate-pulse">
+        <div className="flex items-center justify-center h-28 text-xs text-gray-400 animate-pulse">
           {s.githubLoadingLabel}
         </div>
       ) : displayList.length === 0 ? (
@@ -781,7 +888,7 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
             />
           ))}
           {presetsLoading && subTab === 'github' && (
-            <div className="py-3 text-center text-[11px] text-gray-700 animate-pulse">
+            <div className="py-3 text-center text-[11px] text-gray-500 animate-pulse">
               {s.githubLoadingLabel}
             </div>
           )}
@@ -831,7 +938,7 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
               </span>
             )}
           </div>
-          <p className="text-[11px] text-gray-600 mt-0.5">by {preset.author}</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">by {preset.author}</p>
         </div>
 
         {/* Stars + selector */}
@@ -864,7 +971,7 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
       {/* Affects (overrideKeys) */}
       {preset.overrideKeys.length > 0 && (
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <span className="text-[10px] text-gray-600 shrink-0">{s.affectsLabel}</span>
+          <span className="text-[10px] text-gray-500 shrink-0">{s.affectsLabel}</span>
           {preset.overrideKeys.map((key) => (
             <span key={key} className="text-[10px] px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400/80 rounded-md font-mono border border-indigo-500/15">
               {OVERRIDE_KEY_TO_FILE[key] ?? key}
@@ -878,14 +985,14 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
         {preset.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {preset.tags.slice(0, 5).map((tag) => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-white/4 text-gray-500 rounded-md">
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-white/4 text-gray-400 rounded-md">
                 {tag}
               </span>
             ))}
           </div>
         )}
         {preset.publishedAt && (
-          <span className="text-[10px] text-gray-700 shrink-0 ml-auto">
+          <span className="text-[10px] text-gray-500 shrink-0 ml-auto">
             {s.publishedLabel} {preset.publishedAt}
           </span>
         )}
@@ -897,7 +1004,7 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
           <a
             href={preset.githubUrl}
             onClick={(e) => e.stopPropagation()}
-            className="text-[10px] text-gray-600 hover:text-indigo-400 transition-colors font-mono"
+            className="text-[10px] text-gray-500 hover:text-indigo-400 transition-colors font-mono"
           >
             ↗ {preset.githubUrl.replace('https://github.com/', '')}
           </a>
@@ -909,7 +1016,7 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center h-28 text-xs text-gray-600">
+    <div className="flex items-center justify-center h-28 text-xs text-gray-400">
       {label}
     </div>
   )
@@ -920,7 +1027,7 @@ function EmptyState({ label }: { label: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest mb-2">{title}</p>
+      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-widest mb-2">{title}</p>
       <div className="border border-white/6 rounded-xl px-3 py-3 space-y-3">{children}</div>
     </div>
   )
@@ -929,7 +1036,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-xs text-gray-400">{label}</p>
+      <p className="text-xs text-gray-300">{label}</p>
       {children}
     </div>
   )
@@ -953,7 +1060,7 @@ function SegmentControl({
           className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
             value === opt.value
               ? 'bg-indigo-600 text-white'
-              : 'bg-white/[0.02] text-gray-400 hover:bg-white/8 hover:text-gray-300'
+              : 'bg-white/[0.02] text-gray-400 hover:bg-white/8 hover:text-gray-200'
           }`}
         >
           {opt.label}
@@ -978,7 +1085,7 @@ function Toggle({
       className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-colors ${
         checked
           ? 'border-indigo-700/50 bg-indigo-950/35 text-indigo-300'
-          : 'border-white/6 bg-white/[0.02] text-gray-500 hover:text-gray-400'
+          : 'border-white/6 bg-white/[0.02] text-gray-400 hover:text-gray-300'
       }`}
     >
       <span
