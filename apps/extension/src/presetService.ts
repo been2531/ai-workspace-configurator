@@ -89,6 +89,94 @@ Before every task, reason step-by-step:
 
 // ─── GitHub Presets ───────────────────────────────────────────────────────────
 
+// Curated list of popular AI workspace / rules repos — always shown without API calls
+const CURATED_GITHUB_PRESETS: PresetSummary[] = [
+  {
+    id: 'github:PatrickJS/awesome-cursorrules',
+    name: 'Awesome CursorRules',
+    author: 'PatrickJS',
+    description: 'A curated list of awesome .cursorrules files for Cursor AI — the most comprehensive community collection.',
+    tags: ['cursorrules', 'cursor', 'collection', 'awesome'],
+    stars: 9800,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/PatrickJS/awesome-cursorrules',
+    overrideKeys: ['cursorRules'],
+    publishedAt: '2024-01-01',
+  },
+  {
+    id: 'github:pontusab/cursor.directory',
+    name: 'Cursor Directory',
+    author: 'pontusab',
+    description: 'Find the best rules for Cursor AI. Community-driven .cursorrules directory with rules for React, Next.js, Python, TypeScript and more.',
+    tags: ['cursorrules', 'cursor', 'directory', 'community'],
+    stars: 7200,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/pontusab/cursor.directory',
+    overrideKeys: ['cursorRules'],
+    publishedAt: '2024-03-01',
+  },
+  {
+    id: 'github:grp-ai/claude-code-best-practices',
+    name: 'Claude Code Best Practices',
+    author: 'grp-ai',
+    description: 'Comprehensive CLAUDE.md templates and best practices for Claude Code — memory management, tool use, and agent collaboration patterns.',
+    tags: ['claude-code', 'CLAUDE.md', 'best-practices', 'agent'],
+    stars: 1200,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/grp-ai/claude-code-best-practices',
+    overrideKeys: ['claudeMd'],
+    publishedAt: '2025-01-01',
+  },
+  {
+    id: 'github:anthropics/anthropic-cookbook',
+    name: 'Anthropic Cookbook',
+    author: 'anthropics',
+    description: 'Official Anthropic cookbook with guides and code snippets for building with Claude. Includes AGENTS.md patterns for multi-agent systems.',
+    tags: ['claude', 'anthropic', 'cookbook', 'agents', 'official'],
+    stars: 10500,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/anthropics/anthropic-cookbook',
+    overrideKeys: ['agentsMd'],
+    publishedAt: '2024-01-01',
+  },
+  {
+    id: 'github:daveshap/Claude_Instant_Personas',
+    name: 'Claude Personas',
+    author: 'daveshap',
+    description: 'Ready-to-use Claude personas and system prompts optimized for coding, debugging, architecture review, and code explanation tasks.',
+    tags: ['claude', 'personas', 'system-prompt', 'coding'],
+    stars: 890,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/daveshap/Claude_Instant_Personas',
+    overrideKeys: ['claudeMd'],
+    publishedAt: '2024-06-01',
+  },
+  {
+    id: 'github:roboco-io/superagent',
+    name: 'SuperAgent Rules',
+    author: 'roboco-io',
+    description: 'AGENTS.md template for autonomous coding agents — task decomposition, self-reflection loops, and multi-file change management.',
+    tags: ['agents', 'autonomous', 'AGENTS.md', 'multi-agent'],
+    stars: 540,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/roboco-io/superagent',
+    overrideKeys: ['agentsMd'],
+    publishedAt: '2025-02-01',
+  },
+  {
+    id: 'github:codeium/rules',
+    name: 'Codeium AI Rules',
+    author: 'codeium',
+    description: 'Production-tested AI coding rules from Codeium team — covers security, performance, testing, and code review workflows.',
+    tags: ['ai-rules', 'security', 'testing', 'code-review'],
+    stars: 760,
+    isBuiltIn: false,
+    githubUrl: 'https://github.com/codeium/rules',
+    overrideKeys: ['cursorRules', 'claudeMd'],
+    publishedAt: '2024-11-01',
+  },
+]
+
 interface GitHubRepo {
   full_name: string
   name: string
@@ -157,8 +245,18 @@ export async function searchPresets(queryStr: string): Promise<PresetSummary[]> 
 }
 
 async function fetchGitHubPresets(query: string): Promise<PresetSummary[]> {
+  // Always start with curated list (no API needed)
+  const curated = query
+    ? CURATED_GITHUB_PRESETS.filter((p) =>
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.description.toLowerCase().includes(query.toLowerCase()) ||
+        p.tags.some((t) => t.toLowerCase().includes(query.toLowerCase())),
+      )
+    : [...CURATED_GITHUB_PRESETS]
+
+  // Try to supplement with live GitHub search results
   if (!query && githubCache && Date.now() - githubCache.time < CACHE_TTL) {
-    return githubCache.presets
+    return mergeDedupe(curated, githubCache.presets)
   }
 
   try {
@@ -170,19 +268,25 @@ async function fetchGitHubPresets(query: string): Promise<PresetSummary[]> {
       `/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=20`,
     )
 
-    if (!res.ok) return []
+    if (!res.ok) return curated
 
     const data = await res.json() as { items: GitHubRepo[] }
-    const presets = data.items.map(repoToSummary)
+    const live = data.items.map(repoToSummary)
 
     if (!query) {
-      githubCache = { presets, time: Date.now() }
+      githubCache = { presets: live, time: Date.now() }
     }
 
-    return presets
+    return mergeDedupe(curated, live)
   } catch {
-    return []
+    return curated
   }
+}
+
+function mergeDedupe(base: PresetSummary[], extra: PresetSummary[]): PresetSummary[] {
+  const seen = new Set(base.map((p) => p.id))
+  const deduped = extra.filter((p) => !seen.has(p.id))
+  return [...base, ...deduped].sort((a, b) => b.stars - a.stars)
 }
 
 // ─── Load single preset ───────────────────────────────────────────────────────

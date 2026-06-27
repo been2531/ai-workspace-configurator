@@ -75,11 +75,20 @@ export function activate(context: vscode.ExtensionContext) {
     let stack: DetectedStack = await detectStack(workspaceRoot)
     if (stack.confidence === 'empty') {
       const picked = await vscode.window.showQuickPick(
-        ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust', 'Java', 'C#', 'Ruby', 'PHP', 'Other'],
+        ['TypeScript', 'JavaScript', 'Python', 'Go', 'Rust', 'Java', 'C#', 'Swift', 'Kotlin', 'Ruby', 'PHP', 'C++', 'Other…'],
         { placeHolder: M.selectLanguage, title: M.selectLanguage },
       )
       if (!picked) return
-      stack = { ...stack, language: picked, confidence: 'certain' }
+      let language = picked
+      if (picked === 'Other…') {
+        const custom = await vscode.window.showInputBox({
+          prompt: M.selectLanguage,
+          placeHolder: 'e.g. Elixir, Scala, Dart …',
+        })
+        if (!custom?.trim()) return
+        language = custom.trim()
+      }
+      stack = { ...stack, language, confidence: 'certain' }
     }
 
     await vscode.window.withProgress(
