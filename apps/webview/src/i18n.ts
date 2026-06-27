@@ -85,6 +85,8 @@ export interface UIStrings {
   githubLoadingLabel: string
   // Home tab cursor optional label
   cursorOptional: string
+  // Home tab mandatory file label
+  fileMandatory: string
   // Error
   errorPrefix: string
 }
@@ -160,6 +162,7 @@ const en: UIStrings = {
   publishedLabel: 'Added',
   githubLoadingLabel: 'Loading community presets…',
   cursorOptional: 'Optional',
+  fileMandatory: 'Required',
   errorPrefix: 'Error',
 }
 
@@ -234,6 +237,7 @@ const ko: UIStrings = {
   publishedLabel: '추가됨',
   githubLoadingLabel: '커뮤니티 프리셋 불러오는 중…',
   cursorOptional: '선택사항',
+  fileMandatory: '필수',
   errorPrefix: '오류',
 }
 

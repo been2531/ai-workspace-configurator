@@ -39,6 +39,7 @@ export default function App() {
   const [previewFile, setPreviewFile] = useState<PreviewFile>('claudeMd')
   const [previewSkill, setPreviewSkill] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
+  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true })
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
@@ -105,7 +106,7 @@ export default function App() {
     postMessage({ command: 'saveProfile', payload: updated })
     setStatus('scanning')
     setErrorMsg(undefined)
-    postMessage({ command: 'configure' })
+    postMessage({ command: 'configure', fileSelection })
   }
 
   function handleSaveSettings() {
@@ -224,6 +225,8 @@ export default function App() {
             fileStatus={fileStatus}
             selectedPreset={selectedPreset}
             cursorEnabled={profile.tools?.cursor ?? false}
+            fileSelection={fileSelection}
+            onFileSelectionChange={setFileSelection}
             onConfigure={handleConfigure}
             onGoToPresets={() => handleTabChange('presets')}
           />
@@ -275,6 +278,13 @@ export default function App() {
 
 // ─── Home Tab ────────────────────────────────────────────────────────────────
 
+type FileRowKind = 'mandatory' | 'optional-toggle' | 'optional-cursor'
+
+type FileRowEntry =
+  | { kind: 'mandatory'; label: string; hint: string; exists: boolean }
+  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills'; checked: boolean }
+  | { kind: 'optional-cursor'; label: string; hint: string; exists: boolean; active: boolean }
+
 interface HomeTabProps {
   s: ReturnType<typeof t>
   status: Status
@@ -282,21 +292,22 @@ interface HomeTabProps {
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
   cursorEnabled: boolean
+  fileSelection: { mcp: boolean; skills: boolean }
+  onFileSelectionChange: (sel: { mcp: boolean; skills: boolean }) => void
   onConfigure: () => void
   onGoToPresets: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, onConfigure, onGoToPresets }: HomeTabProps) {
-  const fileEntries: { label: string; hint: string; exists: boolean; optional?: boolean }[] = [
-    { label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
-    { label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
-    { label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, optional: !cursorEnabled },
-    { label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp },
-    { label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills },
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, fileSelection, onFileSelectionChange, onConfigure, onGoToPresets }: HomeTabProps) {
+  const fileRows: FileRowEntry[] = [
+    { kind: 'mandatory', label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
+    { kind: 'mandatory', label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
+    { kind: 'optional-toggle', label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp, selKey: 'mcp', checked: fileSelection.mcp },
+    { kind: 'optional-toggle', label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills, selKey: 'skills', checked: fileSelection.skills },
+    { kind: 'optional-cursor', label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, active: cursorEnabled },
   ]
 
-  const allExist = fileEntries.every((f) => f.exists)
-  const noneExist = fileEntries.every((f) => !f.exists)
+  const allExist = fileRows.every((f) => f.exists)
 
   return (
     <div className="space-y-4">
@@ -318,32 +329,66 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
           {s.fileStatusTitle}
         </p>
         <div className="border border-white/6 rounded-xl overflow-hidden divide-y divide-white/[0.04]">
-          {fileEntries.map(({ label, hint, exists, optional }) => (
+          {fileRows.map((row) => (
             <div
-              key={label}
-              className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
-                exists ? 'bg-emerald-950/20' : 'bg-transparent'
+              key={row.label}
+              className={`flex items-center gap-2 px-3 py-2.5 transition-colors ${
+                row.exists ? 'bg-emerald-950/20' : 'bg-transparent'
               }`}
             >
-              <span className={`text-[8px] shrink-0 ${exists ? 'text-emerald-400' : 'text-gray-700'}`}>
-                {exists ? '●' : '○'}
+              {/* Left control: locked checkbox (mandatory) or interactive checkbox (optional-toggle) or spacer */}
+              {row.kind === 'mandatory' ? (
+                <div
+                  title={s.fileMandatory}
+                  className="w-4 h-4 rounded-sm border border-gray-600/30 bg-gray-700/20 flex items-center justify-center shrink-0 cursor-not-allowed"
+                >
+                  <span className="text-gray-500 text-[9px] leading-none select-none">✓</span>
+                </div>
+              ) : row.kind === 'optional-toggle' ? (
+                <button
+                  onClick={() => onFileSelectionChange({ ...fileSelection, [row.selKey]: !row.checked })}
+                  title={row.checked ? 'Will generate — click to skip' : 'Skipped — click to include'}
+                  className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                    row.checked
+                      ? 'border-indigo-400/60 bg-indigo-500/30 hover:bg-indigo-500/45'
+                      : 'border-white/15 bg-transparent hover:border-white/30 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {row.checked && <span className="text-indigo-200 text-[9px] leading-none select-none">✓</span>}
+                </button>
+              ) : (
+                <div className="w-4 h-4 shrink-0" />
+              )}
+
+              {/* Existence dot */}
+              <span className={`text-[8px] shrink-0 ${row.exists ? 'text-emerald-400' : 'text-gray-700'}`}>
+                {row.exists ? '●' : '○'}
               </span>
-              <span className={`font-mono text-xs shrink-0 w-28 ${exists ? 'text-emerald-300' : 'text-gray-500'}`}>
-                {label}
+
+              {/* Filename */}
+              <span className={`font-mono text-xs shrink-0 w-[6.5rem] ${row.exists ? 'text-emerald-300' : 'text-gray-500'}`}>
+                {row.label}
               </span>
-              {optional && (
+
+              {/* Badge */}
+              {row.kind === 'mandatory' && (
+                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.03] text-gray-700 border border-white/6 shrink-0">
+                  {s.fileMandatory}
+                </span>
+              )}
+              {row.kind === 'optional-cursor' && !row.active && (
                 <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.05] text-gray-600 border border-white/8 shrink-0">
                   {s.cursorOptional}
                 </span>
               )}
-              <span className="text-[11px] text-gray-600 leading-snug">{hint}</span>
+
+              {/* Hint */}
+              <span className="text-[11px] text-gray-600 leading-snug">{row.hint}</span>
             </div>
           ))}
         </div>
         {allExist && (
-          <p className="text-[11px] text-gray-600 mt-2">
-            {s.allFilesPresent}
-          </p>
+          <p className="text-[11px] text-gray-600 mt-2">{s.allFilesPresent}</p>
         )}
       </section>
 
@@ -371,7 +416,6 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnable
             ? s.doneBtn
             : s.configureBtn}
       </button>
-
     </div>
   )
 }

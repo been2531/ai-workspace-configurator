@@ -61,7 +61,7 @@ const MESSAGES: Record<Locale, {
 export function activate(context: vscode.ExtensionContext) {
   const panelManager = new PanelManager(context)
 
-  async function runConfigure() {
+  async function runConfigure(fileSelection?: { mcp: boolean; skills: boolean }) {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
     const profile = getProfile(context)
     const M = MESSAGES[profile.locale ?? 'en']
@@ -88,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
         try {
           progress.report({ message: M.generating, increment: 50 })
           const preset = getSelectedPreset(context) ?? undefined
-          const preview = await generateWorkspaceFiles(workspaceRoot, stack, profile, preset)
+          const preview = await generateWorkspaceFiles(workspaceRoot, stack, profile, preset, fileSelection)
 
           progress.report({ message: M.done, increment: 50 })
           vscode.window.showInformationMessage(
@@ -142,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
   panelManager.onMessage(async (message) => {
     switch (message.command) {
       case 'configure':
-        await runConfigure()
+        await runConfigure(message.fileSelection)
         break
       case 'saveProfile':
         await saveProfile(context, message.payload)

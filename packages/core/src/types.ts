@@ -160,7 +160,7 @@ export type ExtensionMessage =
 // Webview → Extension
 export type WebviewMessage =
   | { command: 'ready' }
-  | { command: 'configure' }
+  | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean } }
   | { command: 'saveProfile'; payload: UserProfile }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }

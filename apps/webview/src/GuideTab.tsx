@@ -5,6 +5,15 @@ type GuideTool = 'claude' | 'codex' | 'cursor'
 
 // ─── Content Types ─────────────────────────────────────────────────────────────
 
+type LifecycleStep = {
+  event: string
+  desc: string
+  hook?: 'block' | 'react'
+  tag?: string
+  tagClass?: string
+  dim?: boolean
+}
+
 type Block =
   | { t: 'p'; text: string }
   | { t: 'ul'; items: string[] }
@@ -13,6 +22,7 @@ type Block =
   | { t: 'tip'; text: string }
   | { t: 'warn'; text: string }
   | { t: 'table'; headers: string[]; rows: string[][] }
+  | { t: 'lifecycle'; steps: LifecycleStep[] }
 
 interface SectionContent {
   title: string
@@ -36,7 +46,18 @@ const CLAUDE_SECTIONS: Section[] = [
       title: 'Agent Loop — The Core Engine',
       blocks: [
         { t: 'p', text: "All of Claude Code's features — CLAUDE.md, MCP, Skills, Hooks, Subagents — aren't independent add-ons. Each plugs into a specific lifecycle event of the Agent Loop. Understanding this loop is understanding how Claude Code works." },
-        { t: 'code', text: 'SessionStart ──► InstructionsLoaded (CLAUDE.md + Rules read)\n     │\n     ▼\n┌─── Per-Turn Loop ─────────────────────────────────────────┐\n│  UserPromptSubmit  ◄── Hooks can block/modify prompt      │\n│       │                                                   │\n│       ▼  (if /skill-name)                                 │\n│  UserPromptExpansion ──► Skill body injected into context │\n│       │                                                   │\n│  ┌─── Agentic Loop (repeats per tool call) ───────────┐  │\n│  │  PreToolUse ──────────────► Hooks (allow / deny)   │  │\n│  │       │                                            │  │\n│  │       ▼                                            │  │\n│  │  Execute Tool  (Bash / Edit / MCP / Subagent)      │  │\n│  │       │                                            │  │\n│  │       ▼                                            │  │\n│  │  PostToolUse ─────────────► Hooks (react / patch)  │  │\n│  └────────────────────────────────────────────────────┘  │\n│  PostToolBatch  ◄── Hooks after parallel-batch completes  │\n│  Stop           ◄── Hooks post-turn (no blocking)         │\n└───────────────────────────────────────────────────────────┘\n     │\n     ▼\nSessionEnd / FileChanged / PreCompact / CwdChanged …' },
+        { t: 'lifecycle', steps: [
+          { event: 'SessionStart', desc: 'MCP servers start and register tools before the first prompt.', tag: '② MCP', tagClass: 'bg-emerald-500/15 text-emerald-300/90 border-emerald-500/20' },
+          { event: 'InstructionsLoaded', desc: 'All CLAUDE.md files merged and injected — before any user input.', tag: '① CLAUDE.md', tagClass: 'bg-indigo-500/15 text-indigo-300/90 border-indigo-500/20' },
+          { event: 'UserPromptSubmit', desc: 'User prompt arrives. Hook can inspect, modify, or block it here.', hook: 'block', tag: '④ Hooks', tagClass: 'bg-red-500/15 text-red-300/90 border-red-500/20' },
+          { event: 'UserPromptExpansion', desc: '/skill-name triggers lazy-load of skill body into context window.', tag: '③ Skills', tagClass: 'bg-violet-500/15 text-violet-300/90 border-violet-500/20' },
+          { event: 'PreToolUse', desc: 'Runs before every tool call. Hook can allow or deny execution.', hook: 'block', tag: '④ Hooks', tagClass: 'bg-red-500/15 text-red-300/90 border-red-500/20' },
+          { event: 'Execute Tool', desc: 'Bash · Edit · MCP tool call · Subagent spawn', tag: '⑤ Subagents', tagClass: 'bg-purple-500/15 text-purple-300/90 border-purple-500/20' },
+          { event: 'PostToolUse', desc: 'Runs after every tool call. React: auto-lint, format, audit log.', hook: 'react', tag: '④ Hooks', tagClass: 'bg-amber-500/15 text-amber-400/80 border-amber-500/15' },
+          { event: 'PostToolBatch', desc: 'Fires after a parallel batch of tool calls completes.', hook: 'react' },
+          { event: 'Stop', desc: 'Turn ends. Non-blocking hooks: Slack notify, metrics, logging.', hook: 'react' },
+          { event: 'SessionEnd · FileChanged · SubagentStart/Stop', desc: 'Async events that fire outside the main per-turn loop.', hook: 'react', dim: true },
+        ] as LifecycleStep[] },
         { t: 'table', headers: ['Feature', 'Lifecycle Point', 'Role'], rows: [
           ['CLAUDE.md', 'InstructionsLoaded (SessionStart)', 'Project context injected into every session'],
           ['MCP Servers', 'SessionStart', 'External tools registered; become callable'],
@@ -51,7 +72,18 @@ const CLAUDE_SECTIONS: Section[] = [
       title: '에이전트 루프 — 핵심 구동 체계',
       blocks: [
         { t: 'p', text: 'Claude Code의 모든 기능 — CLAUDE.md, MCP, Skills, Hooks, Subagents — 은 각자 독립적인 도구가 아닙니다. 이들 각각은 에이전트 루프(Agent Loop)의 특정 생명주기(Lifecycle) 지점에 밀착되어 동작합니다. 이 루프를 이해하면 Claude Code 전체가 보입니다.' },
-        { t: 'code', text: 'SessionStart ──► InstructionsLoaded (CLAUDE.md + Rules 읽기)\n     │\n     ▼\n┌─── 턴(Turn) 루프 ─────────────────────────────────────────┐\n│  UserPromptSubmit  ◄── Hooks: 프롬프트 차단/수정 가능     │\n│       │                                                   │\n│       ▼  (/skill-name 입력 시)                            │\n│  UserPromptExpansion ──► 스킬 본문이 컨텍스트에 주입됨   │\n│       │                                                   │\n│  ┌─── 에이전트 루프 (툴 호출당 반복) ─────────────────┐  │\n│  │  PreToolUse ──────────────► Hooks (allow / deny)   │  │\n│  │       │                                            │  │\n│  │       ▼                                            │  │\n│  │  도구 실행  (Bash / Edit / MCP / Subagent)          │  │\n│  │       │                                            │  │\n│  │       ▼                                            │  │\n│  │  PostToolUse ─────────────► Hooks (반응 / 변환)    │  │\n│  └────────────────────────────────────────────────────┘  │\n│  PostToolBatch  ◄── 병렬 툴 배치 완료 후 Hooks           │\n│  Stop           ◄── 턴 완료 후 Hooks (차단 불가)          │\n└───────────────────────────────────────────────────────────┘\n     │\n     ▼\nSessionEnd / FileChanged / PreCompact / CwdChanged …' },
+        { t: 'lifecycle', steps: [
+          { event: 'SessionStart', desc: 'MCP 서버 시작; 첫 프롬프트 전 도구 등록 완료.', tag: '② MCP', tagClass: 'bg-emerald-500/15 text-emerald-300/90 border-emerald-500/20' },
+          { event: 'InstructionsLoaded', desc: '모든 CLAUDE.md 파일 병합 후 주입 — 사용자 입력 전.', tag: '① CLAUDE.md', tagClass: 'bg-indigo-500/15 text-indigo-300/90 border-indigo-500/20' },
+          { event: 'UserPromptSubmit', desc: '프롬프트 도착. 훅이 검사·수정·차단 가능.', hook: 'block', tag: '④ Hooks', tagClass: 'bg-red-500/15 text-red-300/90 border-red-500/20' },
+          { event: 'UserPromptExpansion', desc: '/skill-name → 스킬 본문이 컨텍스트에 지연 로드됨.', tag: '③ Skills', tagClass: 'bg-violet-500/15 text-violet-300/90 border-violet-500/20' },
+          { event: 'PreToolUse', desc: '모든 툴 호출 전 실행. 훅이 허용 또는 차단.', hook: 'block', tag: '④ Hooks', tagClass: 'bg-red-500/15 text-red-300/90 border-red-500/20' },
+          { event: 'Execute Tool', desc: 'Bash · Edit · MCP 호출 · 서브에이전트 생성', tag: '⑤ Subagents', tagClass: 'bg-purple-500/15 text-purple-300/90 border-purple-500/20' },
+          { event: 'PostToolUse', desc: '모든 툴 호출 후 실행. 반응: 자동 린트, 포맷, 감사 로그.', hook: 'react', tag: '④ Hooks', tagClass: 'bg-amber-500/15 text-amber-400/80 border-amber-500/15' },
+          { event: 'PostToolBatch', desc: '병렬 툴 배치 완료 후 발동.', hook: 'react' },
+          { event: 'Stop', desc: '턴 종료. 비차단 훅: Slack 알림, 메트릭, 로그.', hook: 'react' },
+          { event: 'SessionEnd · FileChanged · SubagentStart/Stop', desc: '메인 턴 루프 외부에서 발동하는 비동기 이벤트.', hook: 'react', dim: true },
+        ] as LifecycleStep[] },
         { t: 'table', headers: ['기능', '생명주기 지점', '역할'], rows: [
           ['CLAUDE.md', 'InstructionsLoaded (SessionStart)', '프로젝트 컨텍스트 — 모든 세션에 항상 주입'],
           ['MCP 서버', 'SessionStart', '외부 도구 등록; 호출 가능 상태로 전환'],
@@ -551,6 +583,54 @@ const TOOLS: { id: GuideTool; label: string; badge: string }[] = [
   { id: 'cursor', label: 'Cursor',      badge: 'bg-violet-500/15 text-violet-300 border-violet-500/30' },
 ]
 
+// ─── Lifecycle Flow ─────────────────────────────────────────────────────────────
+
+function LifecycleFlow({ steps }: { steps: LifecycleStep[] }) {
+  return (
+    <div className="relative py-1">
+      <div className="absolute left-[7px] top-4 bottom-4 w-px bg-white/[0.07]" />
+      <div className="space-y-0">
+        {steps.map((step, i) => (
+          <div key={i} className={`relative flex gap-3 items-start ${step.dim ? 'opacity-35' : ''}`}>
+            <div className={`relative z-10 mt-[3px] w-[15px] h-[15px] rounded-full border flex-shrink-0 flex items-center justify-center ${
+              step.hook === 'block'
+                ? 'border-red-500/50 bg-red-950/60'
+                : 'border-white/12 bg-white/[0.03]'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                step.hook === 'block' ? 'bg-red-400/80' : 'bg-indigo-400/50'
+              }`} />
+            </div>
+            <div className="flex-1 pb-3.5 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                <span className="text-[11px] font-mono font-semibold text-gray-200 leading-tight">
+                  {step.event}
+                </span>
+                {step.hook === 'block' && (
+                  <span className="text-[8px] px-1.5 py-px bg-red-500/15 text-red-400/90 border border-red-500/20 rounded-sm font-bold uppercase tracking-wide">
+                    BLOCK
+                  </span>
+                )}
+                {step.hook === 'react' && !step.dim && (
+                  <span className="text-[8px] px-1 py-px bg-white/[0.04] text-gray-600 border border-white/8 rounded-sm">
+                    hook
+                  </span>
+                )}
+                {step.tag && (
+                  <span className={`text-[9px] px-1.5 py-px rounded-sm border font-medium ${step.tagClass}`}>
+                    {step.tag}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-gray-600 leading-relaxed">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Block Renderer ─────────────────────────────────────────────────────────────
 
 function BlockRenderer({ block }: { block: Block }) {
@@ -604,6 +684,9 @@ function BlockRenderer({ block }: { block: Block }) {
           <p className="text-[12px] text-amber-300/90 leading-relaxed">{block.text}</p>
         </div>
       )
+
+    case 'lifecycle':
+      return <LifecycleFlow steps={block.steps} />
 
     case 'table':
       return (

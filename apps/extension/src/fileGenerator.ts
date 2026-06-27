@@ -13,6 +13,7 @@ export async function generateWorkspaceFiles(
   stack: DetectedStack,
   profile?: UserProfile,
   preset?: CommunityPreset,
+  fileSelection?: { mcp?: boolean; skills?: boolean },
 ): Promise<GeneratedPreview> {
   const rules = composeRules({ stack, profile, preset })
   const mcpJson = JSON.stringify(rules.mcpConfig, null, 2)
@@ -21,7 +22,7 @@ export async function generateWorkspaceFiles(
     { file: 'CLAUDE.md', content: rules.claudeMd, skip: stack.hasClaude },
     { file: '.cursorrules', content: rules.cursorRules, skip: profile?.tools?.cursor !== true },
     { file: 'AGENTS.md', content: rules.agentsMd, skip: stack.hasAgents },
-    { file: '.mcp.json', content: mcpJson, skip: stack.hasMcp },
+    { file: '.mcp.json', content: mcpJson, skip: stack.hasMcp || fileSelection?.mcp === false },
   ]
 
   for (const { file, content, skip } of writes) {
@@ -44,8 +45,8 @@ export async function generateWorkspaceFiles(
     }
   }
 
-  // Write .claude/skills/ only if the directory does not already exist
-  if (!stack.hasSkills && Object.keys(rules.skills).length > 0) {
+  // Write .claude/skills/ only if the directory does not already exist and not skipped
+  if (!stack.hasSkills && Object.keys(rules.skills).length > 0 && fileSelection?.skills !== false) {
     const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
     try {
       fs.mkdirSync(skillsDir, { recursive: true })
