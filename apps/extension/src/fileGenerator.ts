@@ -19,7 +19,7 @@ export async function generateWorkspaceFiles(
 
   const writes: Array<{ file: string; content: string; skip?: boolean }> = [
     { file: 'CLAUDE.md', content: rules.claudeMd, skip: stack.hasClaude },
-    { file: '.cursorrules', content: rules.cursorRules, skip: stack.hasCursor },
+    { file: '.cursorrules', content: rules.cursorRules, skip: profile?.tools?.cursor !== true },
     { file: 'AGENTS.md', content: rules.agentsMd, skip: stack.hasAgents },
     { file: '.mcp.json', content: mcpJson, skip: stack.hasMcp },
   ]
@@ -34,7 +34,7 @@ export async function generateWorkspaceFiles(
   }
 
   // Write .cursor/rules/project.mdc (Cursor's new format, replaces .cursorrules)
-  if (!stack.hasCursorMdc) {
+  if (profile?.tools?.cursor === true && !stack.hasCursorMdc) {
     const cursorRulesDir = path.join(workspaceRoot, '.cursor', 'rules')
     try {
       fs.mkdirSync(cursorRulesDir, { recursive: true })

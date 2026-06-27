@@ -66,6 +66,25 @@ export interface UIStrings {
   clearPreset: string
   selectedPresetLabel: string
   presetReadyNote: string
+  // Guide tab
+  guideTab: string
+  tabDescGuide: string
+  // Tab descriptions
+  tabDescHome: string
+  tabDescPresets: string
+  tabDescSettings: string
+  tabDescPreview: string
+  // Tools section in Settings
+  toolsTitle: string
+  toolsNote: string
+  cursorToolLabel: string
+  // Preset card extras
+  affectsLabel: string
+  publishedLabel: string
+  // GitHub loading
+  githubLoadingLabel: string
+  // Home tab cursor optional label
+  cursorOptional: string
   // Error
   errorPrefix: string
 }
@@ -128,6 +147,19 @@ const en: UIStrings = {
   clearPreset: 'Clear',
   selectedPresetLabel: 'Active preset',
   presetReadyNote: 'Preset selected — click Generate Config to apply it.',
+  guideTab: 'Guide',
+  tabDescGuide: 'How each generated file works and tips for effective AI collaboration.',
+  tabDescHome: 'Check config file status and generate AI optimization files for this project.',
+  tabDescPresets: 'Apply pre-built rule templates. Browse built-in or GitHub community presets.',
+  tabDescSettings: 'Customize coding style, agent behavior, and tools. Save before generating.',
+  tabDescPreview: 'Preview the last generated configuration files.',
+  toolsTitle: 'Tools  (Optional)',
+  toolsNote: 'Only selected tools will have config files generated.',
+  cursorToolLabel: 'Cursor AI  (.cursorrules)',
+  affectsLabel: 'Overwrites:',
+  publishedLabel: 'Added',
+  githubLoadingLabel: 'Loading community presets…',
+  cursorOptional: 'Optional',
   errorPrefix: 'Error',
 }
 
@@ -189,6 +221,19 @@ const ko: UIStrings = {
   clearPreset: '해제',
   selectedPresetLabel: '적용 프리셋',
   presetReadyNote: '프리셋 선택됨 — 설정 파일 생성을 클릭하면 적용됩니다.',
+  guideTab: '가이드',
+  tabDescGuide: '생성된 각 파일의 역할과 AI와 효과적으로 협업하는 방법을 알아보세요.',
+  tabDescHome: '설정 파일 상태를 확인하고 이 프로젝트의 AI 최적화 파일을 생성하세요.',
+  tabDescPresets: '프리셋 템플릿을 적용하세요. 기본 제공 또는 GitHub 커뮤니티 프리셋을 탐색하세요.',
+  tabDescSettings: '코딩 스타일, 에이전트 동작, 도구를 커스터마이즈하세요. 생성 전에 저장하세요.',
+  tabDescPreview: '마지막으로 생성된 설정 파일을 미리봅니다.',
+  toolsTitle: '사용 도구  (선택사항)',
+  toolsNote: '선택한 도구만 설정 파일이 생성됩니다.',
+  cursorToolLabel: 'Cursor AI  (.cursorrules)',
+  affectsLabel: '덮어씀:',
+  publishedLabel: '추가됨',
+  githubLoadingLabel: '커뮤니티 프리셋 불러오는 중…',
+  cursorOptional: '선택사항',
   errorPrefix: '오류',
 }
 

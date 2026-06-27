@@ -5,7 +5,7 @@ import { getProfile, getSelectedPreset, saveSelectedPreset } from './profileStor
 import { searchPresets, loadPreset } from './presetService'
 import type { WebviewMessage, FileStatus } from '@ai-workspace-configurator/core'
 
-type MessageHandler = (msg: WebviewMessage) => void
+type MessageHandler = (msg: WebviewMessage) => Promise<void> | void
 
 export class PanelManager implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined
@@ -51,7 +51,7 @@ export class PanelManager implements vscode.WebviewViewProvider {
           await this.handleSelectPreset(message.presetId)
           return
         }
-        this.messageHandler?.(message)
+        await this.messageHandler?.(message)
       },
       undefined,
       this.context.subscriptions,

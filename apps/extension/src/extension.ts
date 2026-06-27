@@ -95,11 +95,24 @@ export function activate(context: vscode.ExtensionContext) {
             M.success(stack.frameworks.join(', ') || stack.language),
           )
 
+          const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
+          const actualFileStatus = {
+            claude: fs.existsSync(path.join(workspaceRoot, 'CLAUDE.md')),
+            agents: fs.existsSync(path.join(workspaceRoot, 'AGENTS.md')),
+            cursor: fs.existsSync(path.join(workspaceRoot, '.cursorrules')),
+            mcp: fs.existsSync(path.join(workspaceRoot, '.mcp.json')),
+            skills: (() => {
+              try {
+                return fs.existsSync(skillsDir) && fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+              } catch { return false }
+            })(),
+          }
+
           panelManager.postMessage({
             type: 'configured',
             payload: {
               success: true,
-              fileStatus: { claude: true, agents: true, cursor: true, mcp: true, skills: true },
+              fileStatus: actualFileStatus,
               preview,
             },
           })

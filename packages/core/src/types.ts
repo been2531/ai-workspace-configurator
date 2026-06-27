@@ -34,6 +34,9 @@ export interface UserProfile {
     codeOmissionGuard: boolean
     autonomyLevel: 'ask-first' | 'proceed' | 'autonomous'
   }
+  tools?: {
+    cursor: boolean
+  }
   mcpDefaults: string[]
   basePreset?: string
 }
@@ -52,6 +55,7 @@ export const DEFAULT_PROFILE: UserProfile = {
     codeOmissionGuard: true,
     autonomyLevel: 'proceed',
   },
+  tools: { cursor: false },
   mcpDefaults: ['filesystem', 'git'],
 }
 
@@ -63,6 +67,7 @@ export interface CommunityPreset {
   author: string
   description: string
   tags: string[]
+  publishedAt?: string
   overrides: Partial<{
     claudeMd: string
     agentsMd: string
@@ -122,6 +127,7 @@ export interface PresetSummary {
   isBuiltIn: boolean
   githubUrl?: string
   overrideKeys: string[]
+  publishedAt?: string
 }
 
 // ─── Webview ↔ Extension Messages ──────────────────────────────────────────

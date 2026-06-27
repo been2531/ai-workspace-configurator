@@ -7,8 +7,9 @@ export const BUNDLED_PRESETS: CommunityPreset[] = [
     id: 'karpathy/agent-os',
     name: 'Karpathy Agent OS',
     author: 'karpathy',
-    description: 'Multi-agent pre-reasoning system based on the LLM OS architecture.',
+    description: 'Inspired by Andrej Karpathy\'s LLM OS concept. Adds structured <think> pre-reasoning blocks and a 4-tier agent hierarchy to AGENTS.md.',
     tags: ['claude-code', 'multi-agent', 'reasoning'],
+    publishedAt: '2025-06-01',
     overrides: {
       agentsMd: `# AGENTS.md — Karpathy Agent OS
 
@@ -44,8 +45,9 @@ Before every task, reason step-by-step:
     id: 'minimal',
     name: 'Minimal',
     author: 'built-in',
-    description: 'Minimal guidelines. Maximum agent autonomy.',
+    description: 'Bare-minimum AGENTS.md for maximum agent autonomy. Three rules: implement directly if clear, ask one question if not, report concisely.',
     tags: ['minimal', 'autonomous'],
+    publishedAt: '2025-06-01',
     overrides: {
       agentsMd: `# AGENTS.md\n\n## Principles\n- If clear, implement directly.\n- If unclear, ask one core question.\n- Report concisely after completion.\n`,
     },
@@ -54,8 +56,9 @@ Before every task, reason step-by-step:
     id: 'strict-typescript',
     name: 'Strict TypeScript',
     author: 'built-in',
-    description: 'Strict type safety, error handling, and pure-function rules for TypeScript projects.',
+    description: 'Overrides CLAUDE.md with strict TypeScript rules: no `any`, discriminated union errors, Result<T,E> pattern, pure functions first.',
     tags: ['typescript', 'strict', 'type-safety'],
+    publishedAt: '2025-06-01',
     overrides: {
       claudeMd: `# Project Guidelines
 
@@ -117,6 +120,7 @@ function toBuiltInSummary(preset: CommunityPreset): PresetSummary {
     tags: preset.tags,
     stars: 0,
     isBuiltIn: true,
+    publishedAt: preset.publishedAt,
     overrideKeys: Object.keys(preset.overrides),
   }
 }

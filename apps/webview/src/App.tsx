@@ -9,13 +9,14 @@ import type {
 } from '@ai-workspace-configurator/core'
 import { t } from './i18n'
 import type { Locale } from './i18n'
+import GuideTab from './GuideTab'
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void }
 const vscodeApi =
   typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null
 const postMessage = (msg: unknown) => vscodeApi?.postMessage(msg)
 
-type Tab = 'home' | 'settings' | 'preview' | 'presets'
+type Tab = 'home' | 'presets' | 'settings' | 'preview' | 'guide'
 type Status = 'idle' | 'scanning' | 'done' | 'error'
 type PreviewFile = 'claudeMd' | 'agentsMd' | 'cursorRules' | 'mcpConfig' | 'skills'
 
@@ -42,6 +43,7 @@ export default function App() {
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string } | null>(null)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
   const [presetQuery, setPresetQuery] = useState('')
+  const [presetsLoading, setPresetsLoading] = useState(false)
   const presetsLoadedRef = useRef(false)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
@@ -74,6 +76,7 @@ export default function App() {
           break
         case 'presetsResult':
           setPresets(msg.payload)
+          setPresetsLoading(false)
           break
         case 'presetApplied':
           setSelectedPreset(msg.payload)
@@ -90,11 +93,16 @@ export default function App() {
     setTab(newTab)
     if (newTab === 'presets' && !presetsLoadedRef.current) {
       presetsLoadedRef.current = true
+      setPresetsLoading(true)
       postMessage({ command: 'searchPresets', query: '' })
     }
   }
 
   function handleConfigure() {
+    // Auto-save current settings so re-configuration always uses the latest selections
+    const updated: UserProfile = { ...profile, locale }
+    setProfile(updated)
+    postMessage({ command: 'saveProfile', payload: updated })
     setStatus('scanning')
     setErrorMsg(undefined)
     postMessage({ command: 'configure' })
@@ -112,6 +120,7 @@ export default function App() {
     setPresetQuery(q)
     clearTimeout(searchTimerRef.current)
     searchTimerRef.current = setTimeout(() => {
+      setPresetsLoading(true)
       postMessage({ command: 'searchPresets', query: q })
     }, 400)
   }
@@ -169,9 +178,10 @@ export default function App() {
       <nav className="flex border-b border-white/8 px-5">
         {([
           ['home', s.homeTab],
+          ['presets', s.presetsTab],
           ['settings', s.settingsTab],
           ['preview', s.previewTab],
-          ['presets', s.presetsTab],
+          ['guide', s.guideTab],
         ] as [Tab, string][]).map(([id, label]) => (
           <button
             key={id}
@@ -193,6 +203,17 @@ export default function App() {
         ))}
       </nav>
 
+      {/* Tab description */}
+      <div className="px-5 pt-2 pb-0">
+        <p className="text-[11px] text-gray-600 leading-snug">
+          {tab === 'home' ? s.tabDescHome
+            : tab === 'presets' ? s.tabDescPresets
+            : tab === 'settings' ? s.tabDescSettings
+            : tab === 'guide' ? s.tabDescGuide
+            : s.tabDescPreview}
+        </p>
+      </div>
+
       {/* Content */}
       <main className="flex-1 px-5 py-4 overflow-y-auto">
         {tab === 'home' && (
@@ -202,6 +223,7 @@ export default function App() {
             errorMsg={errorMsg}
             fileStatus={fileStatus}
             selectedPreset={selectedPreset}
+            cursorEnabled={profile.tools?.cursor ?? false}
             onConfigure={handleConfigure}
             onGoToPresets={() => handleTabChange('presets')}
           />
@@ -216,6 +238,7 @@ export default function App() {
             onGeneratedLocaleChange={(loc) => setProfileField('generatedLocale', loc)}
             onCodingStyle={setCodingStyle}
             onAgentMode={setAgentMode}
+            onTools={(tools) => setProfileField('tools', tools)}
             onSave={handleSaveSettings}
           />
         )}
@@ -229,6 +252,9 @@ export default function App() {
             onSkillChange={setPreviewSkill}
           />
         )}
+        {tab === 'guide' && (
+          <GuideTab locale={locale} />
+        )}
         {tab === 'presets' && (
           <PresetsTab
             s={s}
@@ -236,6 +262,7 @@ export default function App() {
             selectedPreset={selectedPreset}
             pendingPresetId={pendingPresetId}
             searchQuery={presetQuery}
+            presetsLoading={presetsLoading}
             onSearch={handlePresetSearch}
             onSelect={handlePresetSelect}
             onGenerate={handleConfigure}
@@ -254,15 +281,16 @@ interface HomeTabProps {
   errorMsg: string | undefined
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
+  cursorEnabled: boolean
   onConfigure: () => void
   onGoToPresets: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure, onGoToPresets }: HomeTabProps) {
-  const fileEntries: { label: string; hint: string; exists: boolean }[] = [
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, cursorEnabled, onConfigure, onGoToPresets }: HomeTabProps) {
+  const fileEntries: { label: string; hint: string; exists: boolean; optional?: boolean }[] = [
     { label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
     { label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
-    { label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor },
+    { label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, optional: !cursorEnabled },
     { label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp },
     { label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills },
   ]
@@ -290,7 +318,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure,
           {s.fileStatusTitle}
         </p>
         <div className="border border-white/6 rounded-xl overflow-hidden divide-y divide-white/[0.04]">
-          {fileEntries.map(({ label, hint, exists }) => (
+          {fileEntries.map(({ label, hint, exists, optional }) => (
             <div
               key={label}
               className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
@@ -303,6 +331,11 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, onConfigure,
               <span className={`font-mono text-xs shrink-0 w-28 ${exists ? 'text-emerald-300' : 'text-gray-500'}`}>
                 {label}
               </span>
+              {optional && (
+                <span className="text-[9px] px-1.5 py-px rounded-full bg-white/[0.05] text-gray-600 border border-white/8 shrink-0">
+                  {s.cursorOptional}
+                </span>
+              )}
               <span className="text-[11px] text-gray-600 leading-snug">{hint}</span>
             </div>
           ))}
@@ -360,6 +393,7 @@ interface SettingsTabProps {
     key: K,
     val: UserProfile['agentMode'][K],
   ) => void
+  onTools: (tools: NonNullable<UserProfile['tools']>) => void
   onSave: () => void
 }
 
@@ -372,6 +406,7 @@ function SettingsTab({
   onGeneratedLocaleChange,
   onCodingStyle,
   onAgentMode,
+  onTools,
   onSave,
 }: SettingsTabProps) {
   return (
@@ -467,6 +502,15 @@ function SettingsTab({
             onChange={(v) => onAgentMode('codeOmissionGuard', v)}
           />
         </div>
+      </Section>
+
+      <Section title={s.toolsTitle}>
+        <p className="text-[11px] text-gray-600 -mt-0.5">{s.toolsNote}</p>
+        <Toggle
+          label={s.cursorToolLabel}
+          checked={profile.tools?.cursor ?? false}
+          onChange={(v) => onTools({ ...(profile.tools ?? { cursor: false }), cursor: v })}
+        />
       </Section>
 
       <button
@@ -576,6 +620,7 @@ interface PresetsTabProps {
   selectedPreset: { id: string; name: string } | null
   pendingPresetId: string | null
   searchQuery: string
+  presetsLoading: boolean
   onSearch: (q: string) => void
   onSelect: (presetId: string | null) => void
   onGenerate: () => void
@@ -583,7 +628,7 @@ interface PresetsTabProps {
 
 type PresetSubTab = 'builtin' | 'github'
 
-function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, onSearch, onSelect, onGenerate }: PresetsTabProps) {
+function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, presetsLoading, onSearch, onSelect, onGenerate }: PresetsTabProps) {
   const [subTab, setSubTab] = useState<PresetSubTab>('builtin')
   const isSearching = searchQuery.trim().length > 0
 
@@ -673,33 +718,51 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
       )}
 
       {/* Card list */}
-      {displayList.length === 0 ? (
+      {presetsLoading && displayList.length === 0 ? (
+        <div className="flex items-center justify-center h-28 text-xs text-gray-600 animate-pulse">
+          {s.githubLoadingLabel}
+        </div>
+      ) : displayList.length === 0 ? (
         <EmptyState label={subTab === 'github' && !isSearching ? s.githubUnavailable : s.noPresets} />
       ) : (
         <div className="space-y-2">
           {displayList.map((preset) => (
             <PresetCard
               key={preset.id}
+              s={s}
               preset={preset}
               isSelected={selectedPreset?.id === preset.id}
               isPending={pendingPresetId === preset.id}
               onSelect={onSelect}
             />
           ))}
+          {presetsLoading && subTab === 'github' && (
+            <div className="py-3 text-center text-[11px] text-gray-700 animate-pulse">
+              {s.githubLoadingLabel}
+            </div>
+          )}
         </div>
       )}
     </div>
   )
 }
 
+const OVERRIDE_KEY_TO_FILE: Record<string, string> = {
+  claudeMd: 'CLAUDE.md',
+  agentsMd: 'AGENTS.md',
+  cursorRules: '.cursorrules',
+  mcpServers: '.mcp.json',
+}
+
 interface PresetCardProps {
+  s: ReturnType<typeof t>
   preset: PresetSummary
   isSelected: boolean
   isPending: boolean
   onSelect: (presetId: string | null) => void
 }
 
-function PresetCard({ preset, isSelected, isPending, onSelect }: PresetCardProps) {
+function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardProps) {
   const active = isSelected || isPending
 
   return (
@@ -754,16 +817,35 @@ function PresetCard({ preset, isSelected, isPending, onSelect }: PresetCardProps
         </p>
       )}
 
-      {/* Tags */}
-      {preset.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {preset.tags.slice(0, 5).map((tag) => (
-            <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-white/4 text-gray-500 rounded-md">
-              {tag}
+      {/* Affects (overrideKeys) */}
+      {preset.overrideKeys.length > 0 && (
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          <span className="text-[10px] text-gray-600 shrink-0">{s.affectsLabel}</span>
+          {preset.overrideKeys.map((key) => (
+            <span key={key} className="text-[10px] px-1.5 py-0.5 bg-indigo-500/10 text-indigo-400/80 rounded-md font-mono border border-indigo-500/15">
+              {OVERRIDE_KEY_TO_FILE[key] ?? key}
             </span>
           ))}
         </div>
       )}
+
+      {/* Tags + published date row */}
+      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+        {preset.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {preset.tags.slice(0, 5).map((tag) => (
+              <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-white/4 text-gray-500 rounded-md">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        {preset.publishedAt && (
+          <span className="text-[10px] text-gray-700 shrink-0 ml-auto">
+            {s.publishedLabel} {preset.publishedAt}
+          </span>
+        )}
+      </div>
 
       {/* GitHub link */}
       {preset.githubUrl && (

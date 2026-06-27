@@ -13,6 +13,7 @@ export function getProfile(ctx: vscode.ExtensionContext): UserProfile {
     ...stored,
     codingStyle: { ...DEFAULT_PROFILE.codingStyle, ...stored?.codingStyle },
     agentMode: { ...DEFAULT_PROFILE.agentMode, ...stored?.agentMode },
+    tools: { ...DEFAULT_PROFILE.tools, ...stored?.tools },
   }
 }
 
