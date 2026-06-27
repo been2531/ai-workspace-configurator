@@ -891,9 +891,12 @@ function PresetCard({ s, preset, isSelected, isPending, onSelect }: PresetCardPr
 
       {preset.githubUrl && (
         <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/[0.04]">
-          <a href={preset.githubUrl} onClick={(e) => e.stopPropagation()} className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors font-mono">
-            ↗ {preset.githubUrl.replace('https://github.com/', '')}
-          </a>
+          <button
+            onClick={(e) => { e.stopPropagation(); postMessage({ command: 'openUrl', url: preset.githubUrl }) }}
+            className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors font-mono"
+          >
+            ↗ {preset.githubUrl!.replace('https://github.com/', '')}
+          </button>
         </div>
       )}
     </div>

@@ -170,3 +170,4 @@ export type WebviewMessage =
   | { command: 'saveProfile'; payload: UserProfile }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }
+  | { command: 'openUrl'; url: string }

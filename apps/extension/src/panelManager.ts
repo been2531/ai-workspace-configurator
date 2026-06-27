@@ -51,6 +51,10 @@ export class PanelManager implements vscode.WebviewViewProvider {
           await this.handleSelectPreset(message.presetId)
           return
         }
+        if (message.command === 'openUrl') {
+          void vscode.env.openExternal(vscode.Uri.parse(message.url))
+          return
+        }
         await this.messageHandler?.(message)
       },
       undefined,
