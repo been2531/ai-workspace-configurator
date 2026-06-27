@@ -107,7 +107,8 @@ export class PanelManager implements vscode.WebviewViewProvider {
 
   private async handleSearchPresets(query: string): Promise<void> {
     try {
-      const results = await searchPresets(query)
+      const token = vscode.workspace.getConfiguration('aiWorkspace').get<string>('githubToken') ?? ''
+      const results = await searchPresets(query, token)
       this.postMessage({ type: 'presetsResult', payload: results })
     } catch {
       this.postMessage({ type: 'presetsResult', payload: [] })
