@@ -169,8 +169,8 @@ async function fetchGitHubPresets(query: string, token: string): Promise<PresetS
 
   try {
     const q = query
-      ? `${query} topic:cursorrules OR topic:claude-code OR topic:ai-rules`
-      : 'topic:cursorrules OR topic:claude-code OR topic:ai-rules stars:>5'
+      ? `${query} topic:claude-code OR topic:cursorrules`
+      : 'topic:claude-code OR topic:cursorrules OR topic:ai-rules'
 
     const res = await githubFetch(
       `/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=30`,
