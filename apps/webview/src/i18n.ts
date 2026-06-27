@@ -244,7 +244,7 @@ const ko: UIStrings = {
   clearPreset: '해제',
   selectedPresetLabel: '적용 프리셋',
   presetReadyNote: '프리셋 선택됨 — 설정 파일 생성을 클릭하면 적용됩니다.',
-  docsTab: 'Docs',
+  docsTab: '문서',
   tabDescDocs: '생성된 각 파일의 역할과 AI와 효과적으로 협업하는 방법을 알아보세요.',
   tabDescHome: '생성할 파일을 선택하고 AI 워크스페이스 설정을 실행합니다.',
   tabDescPresets: '프리셋 템플릿을 적용하세요. 기본 제공 또는 GitHub 커뮤니티 프리셋을 탐색하세요.',
