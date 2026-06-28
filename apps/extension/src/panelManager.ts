@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { getProfile, getSelectedPreset, saveSelectedPreset } from './profileStore'
 import { searchPresets, loadPreset } from './presetService'
+import { detectStack } from './stackDetector'
 import type { WebviewMessage, FileStatus } from '@ai-workspace-configurator/core'
 
 type MessageHandler = (msg: WebviewMessage) => Promise<void> | void
@@ -77,6 +78,10 @@ export class PanelManager implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage(message)
   }
 
+  sendInit(): void {
+    void this.sendInitState()
+  }
+
   private async sendInitState(): Promise<void> {
     const profile = getProfile(this.context)
     const selectedPreset = getSelectedPreset(this.context)
@@ -103,6 +108,16 @@ export class PanelManager implements vscode.WebviewViewProvider {
         }
       : { claude: false, agents: false, cursor: false, mcp: false, skills: false, hooks: false, isMonorepo: false }
 
+    const stack = workspaceRoot ? await detectStack(workspaceRoot) : null
+    const stackSummary = stack && stack.confidence !== 'empty'
+      ? {
+          language: stack.language,
+          frameworks: stack.frameworks,
+          packageManager: stack.packageManager,
+          isMonorepo: stack.isMonorepo ?? false,
+        }
+      : undefined
+
     this.postMessage({
       type: 'init',
       payload: {
@@ -111,6 +126,7 @@ export class PanelManager implements vscode.WebviewViewProvider {
         selectedPreset: selectedPreset
           ? { id: selectedPreset.id, name: selectedPreset.name }
           : null,
+        stackSummary,
       },
     })
   }

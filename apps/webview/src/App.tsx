@@ -6,6 +6,7 @@ import type {
   GeneratedPreview,
   ExtensionMessage,
   PresetSummary,
+  StackSummary,
 } from '@ai-workspace-configurator/core'
 import { t } from './i18n'
 import type { Locale } from './i18n'
@@ -52,6 +53,7 @@ export default function App() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string; overrideKeys?: string[] } | null>(null)
+  const [stackSummary, setStackSummary] = useState<StackSummary | undefined>(undefined)
   const [pendingPresetId, setPendingPresetId] = useState<string | null>(null)
   const [presetQuery, setPresetQuery] = useState('')
   const [presetsLoading, setPresetsLoading] = useState(false)
@@ -95,6 +97,7 @@ export default function App() {
           setLocale(msg.payload.profile.locale ?? 'en')
           setFileStatus(msg.payload.fileStatus)
           setSelectedPreset(msg.payload.selectedPreset)
+          setStackSummary(msg.payload.stackSummary)
           break
         case 'configured':
           if (msg.payload.success) {
@@ -261,6 +264,7 @@ export default function App() {
               errorMsg={errorMsg}
               fileStatus={fileStatus}
               selectedPreset={selectedPreset}
+              stackSummary={stackSummary}
               fileSelection={fileSelection}
               onFileSelectionChange={setFileSelection}
               onGenerateClick={handleGenerateClick}
@@ -280,6 +284,8 @@ export default function App() {
               onAgentMode={setAgentMode}
               onTools={(tools) => setProfileField('tools', tools)}
               onSave={handleSaveSettings}
+              onExport={() => postMessage({ command: 'exportProfile' })}
+              onImport={() => postMessage({ command: 'importProfile' })}
             />
           )}
           {tab === 'preview' && (
@@ -384,6 +390,7 @@ interface HomeTabProps {
   errorMsg: string | undefined
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
+  stackSummary?: StackSummary
   fileSelection: { mcp: boolean; skills: boolean; hooks: boolean; cursor: boolean }
   onFileSelectionChange: (sel: { mcp: boolean; skills: boolean; hooks: boolean; cursor: boolean }) => void
   onGenerateClick: () => void
@@ -391,7 +398,7 @@ interface HomeTabProps {
   onGoToSettings: () => void
 }
 
-function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, fileSelection, onFileSelectionChange, onGenerateClick, onGoToPresets, onGoToSettings }: HomeTabProps) {
+function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, stackSummary, fileSelection, onFileSelectionChange, onGenerateClick, onGoToPresets, onGoToSettings }: HomeTabProps) {
   const fileRows: FileRowEntry[] = [
     { kind: 'mandatory', label: 'CLAUDE.md', hint: s.hintClaude, exists: fileStatus.claude },
     { kind: 'mandatory', label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
@@ -465,6 +472,22 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, fileSelectio
             {s.goToSettings}
           </button>
         </div>
+
+        {stackSummary && (stackSummary.frameworks.length > 0 || stackSummary.language !== 'Unknown') && (
+          <div className="flex items-start gap-1.5 mt-2 px-0.5 flex-wrap">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 mt-px">{s.detectedLabel}:</span>
+            {[
+              stackSummary.language !== 'Unknown' ? stackSummary.language : null,
+              ...stackSummary.frameworks.slice(0, 4),
+              stackSummary.packageManager !== 'unknown' ? stackSummary.packageManager : null,
+              stackSummary.isMonorepo ? 'Monorepo' : null,
+            ].filter(Boolean).map((chip) => (
+              <span key={chip} className="text-[10px] px-1.5 py-px rounded-full bg-gray-100 dark:bg-white/[0.05] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/8 font-mono">
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       {status === 'error' && errorMsg && (
@@ -501,9 +524,11 @@ interface SettingsTabProps {
   onAgentMode: <K extends keyof UserProfile['agentMode']>(key: K, val: UserProfile['agentMode'][K]) => void
   onTools: (tools: NonNullable<UserProfile['tools']>) => void
   onSave: () => void
+  onExport: () => void
+  onImport: () => void
 }
 
-function SettingsTab({ s, locale, profile, settingsSaved, onLocaleChange, onGeneratedLocaleChange, onCodingStyle, onAgentMode, onTools, onSave }: SettingsTabProps) {
+function SettingsTab({ s, locale, profile, settingsSaved, onLocaleChange, onGeneratedLocaleChange, onCodingStyle, onAgentMode, onTools, onSave, onExport, onImport }: SettingsTabProps) {
   return (
     <div className="space-y-5">
       <Section title={s.settingsTitle}>
@@ -558,6 +583,24 @@ function SettingsTab({ s, locale, profile, settingsSaved, onLocaleChange, onGene
         <Toggle label={s.cursorToolLabel} checked={profile.tools?.cursor ?? false} onChange={(v) => onTools({ ...(profile.tools ?? { cursor: false }), cursor: v })} />
       </Section>
 
+      <Section title={s.profileTitle}>
+        <p className="text-[11px] text-gray-500 -mt-0.5">{s.profileNote}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={onExport}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
+          >
+            ↑ {s.exportBtn}
+          </button>
+          <button
+            onClick={onImport}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.03] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/8 transition-colors"
+          >
+            ↓ {s.importBtn}
+          </button>
+        </div>
+      </Section>
+
       <button
         onClick={onSave}
         className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-colors ${settingsSaved ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
@@ -577,6 +620,25 @@ interface PreviewTabProps {
   previewSkill: string
   onFileChange: (f: PreviewFile) => void
   onSkillChange: (name: string) => void
+}
+
+// ─── Section analysis ─────────────────────────────────────────────────────────
+
+function parseSections(md: string): { title: string; lines: number }[] {
+  const result: { title: string; lines: number }[] = []
+  let currentTitle = ''
+  let currentLines = 0
+  for (const line of md.split('\n')) {
+    if (line.startsWith('## ')) {
+      if (currentTitle) result.push({ title: currentTitle, lines: currentLines })
+      currentTitle = line.replace(/^#+\s*/, '')
+      currentLines = 1
+    } else {
+      currentLines++
+    }
+  }
+  if (currentTitle) result.push({ title: currentTitle, lines: currentLines })
+  return result.sort((a, b) => b.lines - a.lines)
 }
 
 // ─── Diff engine ─────────────────────────────────────────────────────────────
@@ -715,12 +777,27 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
         </div>
       )}
 
-      {previewFile === 'claudeMd' && (preview.claudeMdLineCount ?? 0) > 80 && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 text-xs text-amber-700 dark:text-amber-300">
-          <span>⚠</span>
-          <span>{preview.claudeMdLineCount} lines — consider trimming (Anthropic best practice: keep under 80)</span>
-        </div>
-      )}
+      {previewFile === 'claudeMd' && (preview.claudeMdLineCount ?? 0) > 80 && (() => {
+        const topSections = parseSections(preview.claudeMd).slice(0, 3)
+        return (
+          <div className="px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+              <span>⚠</span>
+              <span>{preview.claudeMdLineCount} lines — consider trimming (Anthropic best practice: keep under 80)</span>
+            </div>
+            {topSections.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-amber-600 dark:text-amber-400/80 shrink-0">{s.trimLargestSections}</span>
+                {topSections.map(({ title, lines }) => (
+                  <span key={title} className="text-[10px] px-1.5 py-px rounded bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 font-mono border border-amber-200 dark:border-amber-700/30">
+                    {title} ({lines})
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {canDiff && viewMode === 'diff' ? (
         <DiffView oldText={oldContent} newText={newContent} />

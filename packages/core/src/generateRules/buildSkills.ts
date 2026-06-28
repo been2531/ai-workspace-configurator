@@ -162,6 +162,10 @@ Check each item below and report **[OK]**, **[WARN]**, or **[MISSING]**:
    - Exists?
    - JSON is valid (parseable)?
    - Each listed server has a \`command\` or \`url\` field?
+   - For each server with a \`command\` field, verify the executable is installed:
+     - Unix/macOS: \`command -v <command>\`
+     - Windows: \`where <command>\`
+     - If not found, report **[WARN]** with install instructions (e.g., \`npm i -g @modelcontextprotocol/<name>\`)
 
 5. **Hooks** (\`.claude/settings.json\`)
    - Exists?

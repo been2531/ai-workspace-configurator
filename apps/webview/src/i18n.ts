@@ -110,6 +110,14 @@ export interface UIStrings {
   shareStep3: string
   shareCopyBtn: string
   shareCopiedBtn: string
+  // Stack detection
+  detectedLabel: string
+  trimLargestSections: string
+  // Profile export/import
+  profileTitle: string
+  profileNote: string
+  exportBtn: string
+  importBtn: string
 }
 
 const en: UIStrings = {
@@ -203,6 +211,12 @@ const en: UIStrings = {
   shareStep3: '③ Copy a README template',
   shareCopyBtn: 'Copy README template',
   shareCopiedBtn: '✓ Copied',
+  detectedLabel: 'Detected',
+  trimLargestSections: 'Largest sections:',
+  profileTitle: 'Profile',
+  profileNote: 'Export your settings to share across machines, or import from a file.',
+  exportBtn: 'Export Settings',
+  importBtn: 'Import Settings',
 }
 
 const ko: UIStrings = {
@@ -296,6 +310,12 @@ const ko: UIStrings = {
   shareStep3: '③ README 템플릿 복사',
   shareCopyBtn: 'README 템플릿 복사',
   shareCopiedBtn: '✓ 복사됨',
+  detectedLabel: '감지됨',
+  trimLargestSections: '큰 섹션:',
+  profileTitle: '프로필',
+  profileNote: '설정을 파일로 내보내거나, 파일에서 가져와 다른 기기에 적용하세요.',
+  exportBtn: '설정 내보내기',
+  importBtn: '설정 가져오기',
 }
 
 export const UI: Record<Locale, UIStrings> = { en, ko }

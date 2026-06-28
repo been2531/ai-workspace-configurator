@@ -168,9 +168,18 @@ export interface GeneratedPreview {
   }
 }
 
+// ─── Stack Summary (for init payload) ───────────────────────────────────────
+
+export interface StackSummary {
+  language: string
+  frameworks: string[]
+  packageManager: 'npm' | 'pnpm' | 'yarn' | 'bun' | 'unknown'
+  isMonorepo: boolean
+}
+
 // Extension → Webview
 export type ExtensionMessage =
-  | { type: 'init'; payload: { profile: UserProfile; fileStatus: FileStatus; selectedPreset: { id: string; name: string } | null } }
+  | { type: 'init'; payload: { profile: UserProfile; fileStatus: FileStatus; selectedPreset: { id: string; name: string } | null; stackSummary?: StackSummary } }
   | { type: 'configured'; payload: { success: true; fileStatus: FileStatus; preview: GeneratedPreview } }
   | { type: 'configured'; payload: { success: false; error: string } }
   | { type: 'presetsResult'; payload: PresetSummary[] }
@@ -181,6 +190,8 @@ export type WebviewMessage =
   | { command: 'ready' }
   | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean; hooks: boolean; subPackages?: boolean } }
   | { command: 'saveProfile'; payload: UserProfile }
+  | { command: 'exportProfile' }
+  | { command: 'importProfile' }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }
   | { command: 'openUrl'; url: string }

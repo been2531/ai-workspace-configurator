@@ -5,6 +5,7 @@ import { detectStack } from './stackDetector'
 import { generateWorkspaceFiles } from './fileGenerator'
 import { PanelManager } from './panelManager'
 import { getProfile, saveProfile, getSelectedPreset } from './profileStore'
+import { DEFAULT_PROFILE } from '@ai-workspace-configurator/core'
 import { readGeneratedMetadata, checkStaleness, describeStaleness } from './staleness'
 import { checkSkillsUpdate } from './skillsUpdateChecker'
 import type { Locale, DetectedStack } from '@ai-workspace-configurator/core'
@@ -182,6 +183,45 @@ export function activate(context: vscode.ExtensionContext) {
       case 'saveProfile':
         await saveProfile(context, message.payload)
         break
+      case 'exportProfile': {
+        const profile = getProfile(context)
+        const uri = await vscode.window.showSaveDialog({
+          filters: { JSON: ['json'] },
+          defaultUri: vscode.Uri.file('ai-workspace-profile.json'),
+          saveLabel: 'Export',
+        })
+        if (uri) {
+          fs.writeFileSync(uri.fsPath, JSON.stringify(profile, null, 2), 'utf-8')
+          vscode.window.showInformationMessage('Settings exported successfully.')
+        }
+        break
+      }
+      case 'importProfile': {
+        const uris = await vscode.window.showOpenDialog({
+          filters: { JSON: ['json'] },
+          canSelectMany: false,
+          openLabel: 'Import',
+        })
+        if (uris?.[0]) {
+          try {
+            const raw = fs.readFileSync(uris[0].fsPath, 'utf-8')
+            const parsed = JSON.parse(raw) as Partial<typeof DEFAULT_PROFILE>
+            const merged = {
+              ...DEFAULT_PROFILE,
+              ...parsed,
+              codingStyle: { ...DEFAULT_PROFILE.codingStyle, ...parsed?.codingStyle },
+              agentMode: { ...DEFAULT_PROFILE.agentMode, ...parsed?.agentMode },
+              tools: { ...DEFAULT_PROFILE.tools, ...parsed?.tools },
+            }
+            await saveProfile(context, merged)
+            panelManager.sendInit()
+            vscode.window.showInformationMessage('Settings imported successfully.')
+          } catch {
+            vscode.window.showErrorMessage('Failed to import: file is not valid JSON.')
+          }
+        }
+        break
+      }
     }
   })
 

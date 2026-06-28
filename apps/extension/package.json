@@ -2,7 +2,7 @@
   "name": "ai-workspace-configurator",
   "displayName": "AI Workspace Configurator",
   "description": "Detects your project stack and auto-generates CLAUDE.md, AGENTS.md, MCP config & slash commands for Claude Code, Cursor, and Codex.",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "publisher": "ai-workspace-configurator",
   "license": "MIT",
   "repository": {
