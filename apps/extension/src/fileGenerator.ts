@@ -56,13 +56,15 @@ export async function generateWorkspaceFiles(
     }
   }
 
-  // Write .claude/skills/ only if the directory does not already exist and not skipped
+  // Write .claude/skills/<name>/SKILL.md — Agent Skills open-standard layout
+  // (https://code.claude.com/docs/en/skills). Skipped if a skills dir already exists.
   if (!stack.hasSkills && Object.keys(rules.skills).length > 0 && fileSelection?.skills !== false) {
     const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
     try {
-      fs.mkdirSync(skillsDir, { recursive: true })
       for (const [name, content] of Object.entries(rules.skills)) {
-        fs.writeFileSync(path.join(skillsDir, `${name}.md`), content, 'utf-8')
+        const dir = path.join(skillsDir, name)
+        fs.mkdirSync(dir, { recursive: true })
+        fs.writeFileSync(path.join(dir, 'SKILL.md'), content, 'utf-8')
       }
     } catch (err) {
       throw new Error(`Failed to write skills: ${err instanceof Error ? err.message : String(err)}`)
@@ -127,6 +129,9 @@ export async function generateWorkspaceFiles(
 function buildHooksConfig(stack: DetectedStack): string {
   const isJs = stack.manifests.includes('package.json')
 
+  // Claude Code passes hook input as JSON on stdin (NOT env vars) — read it with jq.
+  // https://code.claude.com/docs/en/hooks. If jq is missing, the var resolves empty
+  // and the hook safely no-ops (does not block).
   const hooks: Record<string, unknown[]> = {
     PreToolUse: [
       {
@@ -134,8 +139,8 @@ function buildHooksConfig(stack: DetectedStack): string {
         hooks: [
           {
             type: 'command',
-            // exit 2 blocks the command; output is forwarded to Claude
-            command: 'cmd="$CLAUDE_TOOL_INPUT_COMMAND"; echo "$cmd" | grep -qE \'rm\\s+-[rRfF]*rf|rm\\s+-[rRfF]*f[rRfF]\' && { echo "Blocked: rm -rf detected. Use explicit paths or confirm with user."; exit 2; }; exit 0',
+            // exit 2 blocks the command and forwards stderr to Claude
+            command: 'command=$(jq -r ".tool_input.command // empty" < /dev/stdin 2>/dev/null); printf "%s" "$command" | grep -qE "rm[[:space:]]+-[a-zA-Z]*[rf]" && { echo "Blocked: destructive rm detected. Use an explicit path, or confirm with the user." >&2; exit 2; }; exit 0',
           },
         ],
       },
@@ -149,8 +154,8 @@ function buildHooksConfig(stack: DetectedStack): string {
         hooks: [
           {
             type: 'command',
-            // auto-fix lint errors after every file write; fails silently if eslint is absent
-            command: '[ -f "$(pwd)/node_modules/.bin/eslint" ] && npx eslint --fix "$CLAUDE_TOOL_INPUT_FILE" 2>/dev/null; exit 0',
+            // auto-fix lint errors after every file write; no-ops if jq or eslint is absent
+            command: 'file=$(jq -r ".tool_input.file_path // empty" < /dev/stdin 2>/dev/null); [ -n "$file" ] && [ -x "$(pwd)/node_modules/.bin/eslint" ] && npx eslint --fix "$file" 2>/dev/null; exit 0',
           },
         ],
       },

@@ -1031,12 +1031,12 @@ const EXT_CONTENT: Record<ExtTab, { en: SectionContent; ko: SectionContent }> = 
       title: 'Skills — Lazy-Loaded Workflows',
       blocks: [
         { t: 'p', text: "Skills are named workflow files. Their body loads only at UserPromptExpansion — when you type /skill-name or Claude auto-detects a match. Long checklists cost zero tokens when unused." },
-        { t: 'table', headers: ['invocation', 'Who triggers', 'Useful for'], rows: [
-          ['user', 'User via /skill-name only', 'Deployment scripts, risky workflows'],
-          ['agent', 'Claude auto-matches via description', 'Repeatable analysis, test runs'],
-          ['disabled', 'Nobody (WIP)', 'Staging a skill under development'],
+        { t: 'table', headers: ['Frontmatter', 'Who can invoke', 'Use for'], rows: [
+          ['(default)', 'You + Claude (auto)', 'Repeatable analysis, test runs'],
+          ['disable-model-invocation: true', 'You only, via /name', 'Deploy, commit, risky workflows'],
+          ['user-invocable: false', 'Claude only (auto)', 'Background knowledge, not a command'],
         ]},
-        { t: 'code', text: '# .claude/skills/review/SKILL.md\n---\ndescription: "Run a full PR code review on the current diff"\ninvocation: user\ncontext: fork\n---\n\nReview the current `git diff` for:\n1. Correctness bugs and edge-case failures\n2. Security (OWASP Top 10)\n3. Performance regressions\n4. Missing test coverage\n\nOutput a prioritized list with `file:line` refs.' },
+        { t: 'code', text: '# .claude/skills/review/SKILL.md\n---\ndescription: "Run a full PR code review on the current diff"\ndisable-model-invocation: true   # only you can run it, via /review\ncontext: fork                    # run in an isolated subagent\n---\n\nReview the current `git diff` for:\n1. Correctness bugs and edge-case failures\n2. Security (OWASP Top 10)\n3. Performance regressions\n4. Missing test coverage\n\nOutput a prioritized list with `file:line` refs.' },
         { t: 'tip', text: 'context: fork runs the skill in an isolated subagent — keeping the lead context clean. Use it for long analysis tasks.' },
       ],
     },
@@ -1044,12 +1044,12 @@ const EXT_CONTENT: Record<ExtTab, { en: SectionContent; ko: SectionContent }> = 
       title: 'Skills — 지연 로드 워크플로우',
       blocks: [
         { t: 'p', text: '스킬은 이름이 있는 워크플로우 파일입니다. 본문은 UserPromptExpansion 시점에만 로드됩니다 — /skill-name 입력 시 또는 Claude 자동 매칭 시. 미사용 시 토큰 비용 0입니다.' },
-        { t: 'table', headers: ['invocation 값', '누가 트리거', '적합한 용도'], rows: [
-          ['user', '사용자가 /skill-name으로만', '배포 스크립트, 위험한 워크플로우'],
-          ['agent', 'Claude가 description으로 자동 매칭', '반복 분석, 테스트 실행'],
-          ['disabled', '아무도 (진행 중인 작업)', '개발 중인 스킬 스테이징'],
+        { t: 'table', headers: ['frontmatter', '누가 호출 가능', '용도'], rows: [
+          ['(기본값)', '사용자 + Claude(자동)', '반복 분석, 테스트 실행'],
+          ['disable-model-invocation: true', '사용자만, /이름으로', '배포, 커밋, 위험한 워크플로우'],
+          ['user-invocable: false', 'Claude만(자동)', '배경 지식, 명령 아님'],
         ]},
-        { t: 'code', text: '# .claude/skills/review/SKILL.md\n---\ndescription: "현재 diff에 대해 전체 PR 코드 리뷰 실행"\ninvocation: user\ncontext: fork\n---\n\n현재 `git diff`를 다음 항목으로 리뷰하세요:\n1. 정확성 버그 및 엣지 케이스\n2. 보안 (OWASP Top 10)\n3. 성능 회귀\n4. 누락된 테스트 커버리지\n\n`file:line` 참조와 함께 우선순위 목록 출력.' },
+        { t: 'code', text: '# .claude/skills/review/SKILL.md\n---\ndescription: "현재 diff에 대해 전체 PR 코드 리뷰 실행"\ndisable-model-invocation: true   # 사용자만 /review로 실행\ncontext: fork                    # 격리된 서브에이전트에서 실행\n---\n\n현재 `git diff`를 다음 항목으로 리뷰하세요:\n1. 정확성 버그 및 엣지 케이스\n2. 보안 (OWASP Top 10)\n3. 성능 회귀\n4. 누락된 테스트 커버리지\n\n`file:line` 참조와 함께 우선순위 목록 출력.' },
         { t: 'tip', text: 'context: fork는 스킬을 격리된 서브에이전트에서 실행합니다 — 리드 컨텍스트를 깔끔하게 유지합니다. 긴 분석 작업에 사용하세요.' },
       ],
     },

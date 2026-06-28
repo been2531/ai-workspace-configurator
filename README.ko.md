@@ -21,7 +21,7 @@
 | `.cursorrules` | Cursor AI 규칙 (레거시 형식) |
 | `.cursor/rules/project.mdc` | Cursor AI 규칙 (새 MDC 형식) |
 | `.mcp.json` | MCP 서버 자동 구성 |
-| `.claude/skills/*.md` | 슬래시 커맨드: `/run`, `/test`, `/review`, `/db-migrate`, `/commit`, `/fix`, `/type-check` |
+| `.claude/skills/<name>/SKILL.md` | 슬래시 커맨드 (Agent Skills 포맷): `/run`, `/test`, `/review`, `/commit`, `/fix`, `/pr`, `/security`, `/doctor` + 스택별 `/type-check`, `/db-migrate`, `/deploy` |
 
 모든 처리는 **100% 로컬**에서 실행됩니다 — API 호출 없음, 데이터 전송 없음.
 

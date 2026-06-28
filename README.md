@@ -21,7 +21,7 @@
 | `.cursorrules` | Cursor AI rules (legacy format) |
 | `.cursor/rules/project.mdc` | Cursor AI rules (new MDC format) |
 | `.mcp.json` | MCP server auto-configuration |
-| `.claude/skills/*.md` | Slash commands: `/run`, `/test`, `/review`, `/db-migrate`, `/commit`, `/fix`, `/type-check` |
+| `.claude/skills/<name>/SKILL.md` | Slash commands (Agent Skills format): `/run`, `/test`, `/review`, `/commit`, `/fix`, `/pr`, `/security`, `/doctor`, plus `/type-check`, `/db-migrate`, `/deploy` per stack |
 
 Everything runs **100% locally** — no API calls, no data sent anywhere.
 

@@ -320,7 +320,11 @@ function detectSkillsDir(workspaceRoot: string): boolean {
   const skillsDir = path.join(workspaceRoot, '.claude', 'skills')
   if (!fs.existsSync(skillsDir)) return false
   try {
-    return fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+    return fs.readdirSync(skillsDir, { withFileTypes: true }).some(
+      (e) =>
+        (e.isDirectory() && fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md'))) ||
+        (e.isFile() && e.name.endsWith('.md')),
+    )
   } catch {
     return false
   }

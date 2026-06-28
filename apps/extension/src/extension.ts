@@ -138,7 +138,12 @@ export function activate(context: vscode.ExtensionContext) {
             mcp: fs.existsSync(path.join(workspaceRoot, '.mcp.json')),
             skills: (() => {
               try {
-                return fs.existsSync(skillsDir) && fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
+                if (!fs.existsSync(skillsDir)) return false
+                return fs.readdirSync(skillsDir, { withFileTypes: true }).some(
+                  (e) =>
+                    (e.isDirectory() && fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md'))) ||
+                    (e.isFile() && e.name.endsWith('.md')),
+                )
               } catch { return false }
             })(),
             hooks: fs.existsSync(path.join(workspaceRoot, '.claude', 'settings.json')),

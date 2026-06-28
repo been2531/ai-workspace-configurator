@@ -165,7 +165,14 @@ function detectPackageManager(root: string): 'npm' | 'pnpm' | 'yarn' | 'unknown'
 
 function detectSkillsDir(root: string): boolean {
   const dir = path.join(root, '.claude', 'skills')
-  try { return fs.existsSync(dir) && fs.readdirSync(dir).some((f) => f.endsWith('.md')) } catch { return false }
+  try {
+    if (!fs.existsSync(dir)) return false
+    return fs.readdirSync(dir, { withFileTypes: true }).some(
+      (e) =>
+        (e.isDirectory() && fs.existsSync(path.join(dir, e.name, 'SKILL.md'))) ||
+        (e.isFile() && e.name.endsWith('.md')),
+    )
+  } catch { return false }
 }
 
 function detectCursorMdcDir(root: string): boolean {

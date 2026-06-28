@@ -50,7 +50,9 @@ Steps:
   skills['fix'] = skill(
     'fix',
     'Diagnose and fix an error or failing test. Pass the error message or test name as context.',
-    `Diagnose and fix the error or failing test described by the user.
+    `Diagnose and fix the error or failing test: $ARGUMENTS
+
+(If no error or test name was provided above, ask the user which one to fix.)
 
 Steps:
 1. Read the full error message carefully — identify the error type, file, and line number
@@ -61,6 +63,7 @@ Steps:
 6. Verify: re-run the failing command or test to confirm the error is resolved
 7. If the fix introduces new failures, diagnose and resolve them before finishing
 `,
+    { argumentHint: '[error message or test name]' },
   )
 
   // ── /pr — universal ─────────────────────────────────────────────────────────
@@ -153,10 +156,10 @@ Check each item below and report **[OK]**, **[WARN]**, or **[MISSING]**:
    - Exists at workspace root?
    - Contains at least one agent behavior rule?
 
-3. **Skills directory** (\`.claude/commands/\` or \`CLAUDE/commands/\`)
-   - Directory exists?
-   - At least one \`.md\` file present?
-   - Each skill file has valid YAML frontmatter (\`name:\` and \`description:\` fields)?
+3. **Skills** (\`.claude/skills/<name>/SKILL.md\`)
+   - \`.claude/skills/\` directory exists?
+   - At least one \`<name>/SKILL.md\` present? (legacy \`.claude/commands/*.md\` also valid)
+   - Each SKILL.md has YAML frontmatter with a \`description:\` field (so Claude knows when to use it)?
 
 4. **MCP config** (\`.mcp.json\`)
    - Exists?
@@ -313,8 +316,21 @@ Steps:
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function skill(name: string, description: string, body: string): string {
-  return `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}`
+// Commands with side effects or that need timing control should only be invoked
+// explicitly by the user (/name) — never auto-triggered by Claude.
+// https://code.claude.com/docs/en/skills (Control who invokes a skill)
+const USER_ONLY_SKILLS = new Set(['commit', 'pr', 'issue', 'changelog', 'db-migrate', 'deploy'])
+
+function skill(
+  name: string,
+  description: string,
+  body: string,
+  opts?: { argumentHint?: string },
+): string {
+  const fm = [`name: ${name}`, `description: ${description}`]
+  if (opts?.argumentHint) fm.push(`argument-hint: ${opts.argumentHint}`)
+  if (USER_ONLY_SKILLS.has(name)) fm.push('disable-model-invocation: true')
+  return `---\n${fm.join('\n')}\n---\n\n${body}`
 }
 
 function buildRunCommand(
