@@ -54,11 +54,11 @@ const LOOP_STEPS_KO: LifecycleStep[] = [
 // ─── Codex / Cursor data ───────────────────────────────────────────────────────
 
 interface SectionContent { title: string; blocks: Block[] }
-interface Section { id: string; icon: string; en: SectionContent; ko: SectionContent }
+interface Section { id: string; icon: string; shortEn: string; shortKo: string; en: SectionContent; ko: SectionContent }
 
 const CODEX_SECTIONS: Section[] = [
   {
-    id: 'codex-overview', icon: '⚡',
+    id: 'codex-overview', icon: '⚡', shortEn: 'Intro', shortKo: '소개',
     en: {
       title: 'What is Codex CLI?',
       blocks: [
@@ -95,7 +95,7 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'codex-agents-md', icon: '📋',
+    id: 'codex-agents-md', icon: '📋', shortEn: 'AGENTS', shortKo: 'AGENTS',
     en: {
       title: 'AGENTS.md — The Context File',
       blocks: [
@@ -126,7 +126,7 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'codex-approval', icon: '🔒',
+    id: 'codex-approval', icon: '🔒', shortEn: 'Sandbox', shortKo: '샌드박스',
     en: {
       title: 'Approval Modes & Sandbox',
       blocks: [
@@ -155,7 +155,7 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'codex-models', icon: '🤖',
+    id: 'codex-models', icon: '🤖', shortEn: 'Models', shortKo: '모델',
     en: {
       title: 'Model Selection & Performance',
       blocks: [
@@ -186,7 +186,7 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'codex-slash-commands', icon: '⌨️',
+    id: 'codex-slash-commands', icon: '⌨️', shortEn: 'Cmds', shortKo: '커맨드',
     en: {
       title: 'Slash Commands & Extensions',
       blocks: [
@@ -221,7 +221,7 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'codex-workflow', icon: '🔄',
+    id: 'codex-workflow', icon: '🔄', shortEn: 'Flow', shortKo: '워크플로',
     en: {
       title: 'Real-World Workflow Patterns',
       blocks: [
@@ -257,7 +257,7 @@ const CODEX_SECTIONS: Section[] = [
 
 const CURSOR_SECTIONS: Section[] = [
   {
-    id: 'cursor-overview', icon: '⚡',
+    id: 'cursor-overview', icon: '⚡', shortEn: 'Intro', shortKo: '소개',
     en: {
       title: 'What is Cursor?',
       blocks: [
@@ -294,7 +294,7 @@ const CURSOR_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'cursor-ladder', icon: '🪜',
+    id: 'cursor-ladder', icon: '🪜', shortEn: 'Modes', shortKo: '모드',
     en: {
       title: 'The Editing Ladder: Tab → K → Composer → Agent',
       blocks: [
@@ -327,7 +327,7 @@ const CURSOR_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'cursor-rules-flow', icon: '📋',
+    id: 'cursor-rules-flow', icon: '📋', shortEn: 'Rules', shortKo: '규칙',
     en: {
       title: 'Rules Files (.mdc) — 4 Activation Types',
       blocks: [
@@ -356,7 +356,7 @@ const CURSOR_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'cursor-context', icon: '🔍',
+    id: 'cursor-context', icon: '🔍', shortEn: 'Context', shortKo: '컨텍스트',
     en: {
       title: '@ Context System',
       blocks: [
@@ -391,7 +391,7 @@ const CURSOR_SECTIONS: Section[] = [
     },
   },
   {
-    id: 'cursor-rules-writing', icon: '✍️',
+    id: 'cursor-rules-writing', icon: '✍️', shortEn: 'Writing', shortKo: '작성법',
     en: {
       title: 'Writing Rules That Actually Work',
       blocks: [
@@ -1172,35 +1172,66 @@ function Chapter5({ isKo }: { isKo: boolean }) {
   )
 }
 
-// ─── Chapters 6 & 7: Accordion for Codex / Cursor ─────────────────────────────
+// ─── Sidebar layout for Codex / Cursor ────────────────────────────────────────
 
-function AccordionChapter({ sections, isKo, title }: { sections: Section[]; isKo: boolean; title: string }) {
-  const [openId, setOpenId] = useState<string | null>(sections[0]?.id ?? null)
-
+function SidebarChapter({
+  sections,
+  isKo,
+  activeId,
+  onSelect,
+  accentBorder,
+  accentBg,
+  accentBadge,
+  accentLabel,
+}: {
+  sections: Section[]
+  isKo: boolean
+  activeId: string
+  onSelect: (id: string) => void
+  accentBorder: string
+  accentBg: string
+  accentBadge: string
+  accentLabel: string
+}) {
+  const active = sections.find(s => s.id === activeId) ?? sections[0]
+  const content = isKo ? active.ko : active.en
   return (
-    <div className="space-y-4">
-      <h2 className="text-base font-bold text-gray-900 dark:text-white">{title}</h2>
-      <div className="space-y-2">
+    <div className="flex flex-1 min-h-0">
+      <nav className="w-[56px] shrink-0 flex flex-col border-r border-gray-200 dark:border-white/8 overflow-y-auto">
         {sections.map((section) => {
-          const isOpen = openId === section.id
-          const content = isKo ? section.ko : section.en
+          const isActive = section.id === activeId
           return (
-            <div key={section.id} className={`rounded-xl border transition-colors ${isOpen ? 'border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.025]' : 'border-gray-200 dark:border-white/6 hover:border-gray-300 dark:hover:border-white/10'}`}>
-              <button onClick={() => setOpenId(isOpen ? null : section.id)} className="w-full flex items-center gap-2.5 px-4 py-3 text-left group">
-                <span className="text-sm leading-none shrink-0">{section.icon}</span>
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex-1 leading-snug group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                  {content.title}
-                </span>
-                <span className={`text-[10px] text-gray-400 dark:text-gray-600 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
-              </button>
-              {isOpen && (
-                <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-white/[0.06] pt-3">
-                  {content.blocks.map((block, i) => <BlockRenderer key={i} block={block} />)}
-                </div>
-              )}
-            </div>
+            <button
+              key={section.id}
+              onClick={() => onSelect(section.id)}
+              title={isKo ? section.ko.title : section.en.title}
+              className={`flex flex-col items-center gap-1 py-2.5 px-1 border-r-2 transition-all flex-shrink-0 ${
+                isActive
+                  ? `${accentBorder} ${accentBg}`
+                  : 'border-transparent hover:bg-gray-50 dark:hover:bg-white/[0.03]'
+              }`}
+            >
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[13px] transition-colors ${
+                isActive ? accentBadge : 'bg-gray-200 dark:bg-white/10'
+              }`}>
+                {section.icon}
+              </span>
+              <span className={`text-[8px] text-center leading-tight transition-colors w-full ${
+                isActive ? `${accentLabel} font-semibold` : 'text-gray-400 dark:text-gray-600'
+              }`}>
+                {isKo ? section.shortKo : section.shortEn}
+              </span>
+            </button>
           )
         })}
+      </nav>
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-w-0">
+        <div className="space-y-3">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">{content.title}</h2>
+          {content.blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -1211,6 +1242,8 @@ function AccordionChapter({ sections, isKo, title }: { sections: Section[]; isKo
 export default function GuideTab({ locale }: { locale: Locale }) {
   const [tool, setTool] = useState<GuideTool>('claude')
   const [chapter, setChapter] = useState<ChapterId>('intro')
+  const [codexSectionId, setCodexSectionId] = useState<string>(CODEX_SECTIONS[0].id)
+  const [cursorSectionId, setCursorSectionId] = useState<string>(CURSOR_SECTIONS[0].id)
   const isKo = locale === 'ko'
 
   function renderChapterContent() {
@@ -1290,14 +1323,28 @@ export default function GuideTab({ locale }: { locale: Locale }) {
             {renderChapterContent()}
           </div>
         </div>
+      ) : tool === 'codex' ? (
+        <SidebarChapter
+          sections={CODEX_SECTIONS}
+          isKo={isKo}
+          activeId={codexSectionId}
+          onSelect={setCodexSectionId}
+          accentBorder="border-emerald-500"
+          accentBg="bg-emerald-50 dark:bg-emerald-950/30"
+          accentBadge="bg-emerald-500 text-white"
+          accentLabel="text-emerald-600 dark:text-emerald-400"
+        />
       ) : (
-        /* Codex / Cursor: full-width accordion */
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {tool === 'codex'
-            ? <AccordionChapter sections={CODEX_SECTIONS} isKo={isKo} title="Codex CLI" />
-            : <AccordionChapter sections={CURSOR_SECTIONS} isKo={isKo} title="Cursor" />
-          }
-        </div>
+        <SidebarChapter
+          sections={CURSOR_SECTIONS}
+          isKo={isKo}
+          activeId={cursorSectionId}
+          onSelect={setCursorSectionId}
+          accentBorder="border-violet-500"
+          accentBg="bg-violet-50 dark:bg-violet-950/30"
+          accentBadge="bg-violet-500 text-white"
+          accentLabel="text-violet-600 dark:text-violet-400"
+        />
       )}
     </div>
   )
