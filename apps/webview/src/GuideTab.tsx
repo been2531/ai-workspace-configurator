@@ -62,14 +62,14 @@ const CODEX_SECTIONS: Section[] = [
     en: {
       title: 'What is Codex CLI?',
       blocks: [
-        { t: 'p', text: "OpenAI's open-source terminal agent (github.com/openai/codex). Reads AGENTS.md files and autonomously edits code + runs shell commands. Simpler than Claude Code — no Hooks, Skills, or MCP — but sandboxed by Docker out of the box." },
+        { t: 'p', text: "OpenAI's open-source terminal agent (github.com/openai/codex). Reads AGENTS.md files and autonomously edits code + runs shell commands. Ships with 50+ slash commands, MCP, Skills, Hooks, Memory, and Plugins. Sandboxed by macOS Seatbelt (macOS) or Linux Landlock (Linux) by default — not Docker." },
         { t: 'table', headers: ['Feature', 'Codex CLI', 'Claude Code'], rows: [
           ['Primary model', 'GPT-4.1 / o4-mini / o3', 'claude-sonnet-4 / claude-opus-4'],
           ['Context files', 'AGENTS.md', 'CLAUDE.md + AGENTS.md'],
           ['Lifecycle hooks', '❌ None', '✅ 20+ events'],
-          ['Skills / slash commands', '❌ None', '✅ .claude/skills/'],
-          ['MCP support', '❌ None', '✅ .mcp.json'],
-          ['Sandbox', '✅ Docker by default', '⚠️ Trust-based'],
+          ['Skills / slash commands', '✅ 50+ slash commands', '✅ .claude/skills/'],
+          ['MCP support', '✅ codex mcp subcommand', '✅ .mcp.json'],
+          ['Sandbox', '✅ Seatbelt / Landlock', '⚠️ Trust-based'],
           ['Subagents', '❌ Single agent', '✅ Up to 10 parallel'],
           ['Open source', '✅ MIT', '❌ Proprietary CLI'],
         ]},
@@ -79,14 +79,14 @@ const CODEX_SECTIONS: Section[] = [
     ko: {
       title: 'Codex CLI란?',
       blocks: [
-        { t: 'p', text: "OpenAI의 오픈소스 터미널 에이전트 (github.com/openai/codex). AGENTS.md를 읽고 자율적으로 코드를 편집하고 셸 명령을 실행합니다. Claude Code보다 단순하지만 — Hooks, Skills, MCP 없음 — Docker 샌드박스를 기본 제공합니다." },
+        { t: 'p', text: "OpenAI의 오픈소스 터미널 에이전트 (github.com/openai/codex). AGENTS.md를 읽고 자율적으로 코드를 편집하고 셸 명령을 실행합니다. 50+ 슬래시 커맨드, MCP, Skills, Hooks, Memory, Plugins를 기본 제공합니다. macOS Seatbelt(macOS) 또는 Linux Landlock(Linux)으로 샌드박스 처리됩니다 — Docker 아님." },
         { t: 'table', headers: ['기능', 'Codex CLI', 'Claude Code'], rows: [
           ['주요 모델', 'GPT-4.1 / o4-mini / o3', 'claude-sonnet-4 / claude-opus-4'],
           ['컨텍스트 파일', 'AGENTS.md', 'CLAUDE.md + AGENTS.md'],
           ['생명주기 훅', '❌ 없음', '✅ 20+ 이벤트'],
-          ['Skills / 슬래시 커맨드', '❌ 없음', '✅ .claude/skills/'],
-          ['MCP 지원', '❌ 없음', '✅ .mcp.json'],
-          ['샌드박스', '✅ 기본 Docker', '⚠️ 신뢰 기반'],
+          ['Skills / 슬래시 커맨드', '✅ 50+ 커맨드', '✅ .claude/skills/'],
+          ['MCP 지원', '✅ codex mcp 서브커맨드', '✅ .mcp.json'],
+          ['샌드박스', '✅ Seatbelt / Landlock', '⚠️ 신뢰 기반'],
           ['서브에이전트', '❌ 단일 에이전트', '✅ 최대 10개 병렬'],
           ['오픈소스', '✅ MIT', '❌ 독점 CLI'],
         ]},
@@ -130,27 +130,27 @@ const CODEX_SECTIONS: Section[] = [
     en: {
       title: 'Approval Modes & Sandbox',
       blocks: [
-        { t: 'p', text: "Codex's approval system is a single flag — no per-event hooks like Claude Code. Docker sandboxing is automatic when Docker is available, isolating file writes and network access." },
+        { t: 'p', text: "Codex's approval system controls how much it asks before acting. The sandbox uses macOS Seatbelt (macOS) or Linux Landlock (Linux) — not Docker — to isolate file writes and network access. Lifecycle hooks are also available via the /hooks command." },
         { t: 'table', headers: ['Flag value', 'File edits', 'Shell commands', 'Best for'], rows: [
           ['on-request (default)', 'Auto-apply', 'Ask each time', 'Day-to-day development'],
           ['never', 'Auto-apply', 'Auto-run', 'CI/CD, trusted automation'],
           ['read-only', 'Ask first', 'Ask first', 'Code review, sensitive repos'],
         ]},
-        { t: 'code', text: '# Day-to-day\ncodex "add rate limiting to the auth middleware"\n\n# CI — fully autonomous\ncodex --ask-for-approval never "run migrations and fix failures"\n\n# Explore without changes\ncodex --ask-for-approval read-only "explain the auth flow"\n\n# Disable Docker sandbox (not recommended)\ncodex --no-sandbox "..."\n\n# ~/.codex/config.toml — permanent defaults\n[defaults]\nmodel = "o4-mini"\nask_for_approval = "on-request"\nsandbox = true' },
-        { t: 'warn', text: "never mode runs shell commands without confirmation. Docker sandboxing mitigates this, but disable it only in fully trusted environments." },
+        { t: 'code', text: '# Day-to-day\ncodex "add rate limiting to the auth middleware"\n\n# CI — fully autonomous\ncodex --ask-for-approval never "run migrations and fix failures"\n\n# Explore without changes\ncodex --ask-for-approval read-only "explain the auth flow"\n\n# Disable sandbox (not recommended)\ncodex --no-sandbox "..."\n\n# ~/.codex/config.toml — permanent defaults\n[defaults]\nmodel = "o4-mini"\nask_for_approval = "on-request"\nsandbox = true' },
+        { t: 'warn', text: "never mode runs shell commands without confirmation. The OS-level sandbox (Seatbelt/Landlock) mitigates this, but disable it only in fully trusted environments." },
       ],
     },
     ko: {
       title: '승인 모드 & 샌드박스',
       blocks: [
-        { t: 'p', text: "Codex의 승인 시스템은 단일 플래그입니다 — Claude Code 같은 이벤트별 훅 없음. Docker 샌드박스는 Docker 사용 가능 시 자동으로 활성화되어 파일 쓰기와 네트워크 접근을 격리합니다." },
+        { t: 'p', text: "Codex의 승인 시스템은 얼마나 자주 확인을 요청할지 제어합니다. 샌드박스는 macOS Seatbelt(macOS) 또는 Linux Landlock(Linux)을 사용합니다 — Docker 아님. /hooks 커맨드로 생명주기 훅도 활용할 수 있습니다." },
         { t: 'table', headers: ['플래그 값', '파일 편집', '셸 명령', '적합한 경우'], rows: [
           ['on-request (기본)', '자동 적용', '매번 확인', '일상 개발'],
           ['never', '자동 적용', '자동 실행', 'CI/CD, 신뢰된 자동화'],
           ['read-only', '먼저 확인', '먼저 확인', '코드 리뷰, 민감한 레포'],
         ]},
-        { t: 'code', text: '# 일상 사용\ncodex "auth 미들웨어에 레이트 리미팅 추가"\n\n# CI — 완전 자율\ncodex --ask-for-approval never "마이그레이션 실행 후 실패 수정"\n\n# 변경 없이 탐색\ncodex --ask-for-approval read-only "auth 흐름 설명해줘"\n\n# Docker 샌드박스 비활성화 (비권장)\ncodex --no-sandbox "..."\n\n# ~/.codex/config.toml — 영구 기본값\n[defaults]\nmodel = "o4-mini"\nask_for_approval = "on-request"\nsandbox = true' },
-        { t: 'warn', text: "never 모드는 확인 없이 셸 명령을 실행합니다. Docker 샌드박스가 이를 완화하지만, 완전히 신뢰된 환경에서만 비활성화하세요." },
+        { t: 'code', text: '# 일상 사용\ncodex "auth 미들웨어에 레이트 리미팅 추가"\n\n# CI — 완전 자율\ncodex --ask-for-approval never "마이그레이션 실행 후 실패 수정"\n\n# 변경 없이 탐색\ncodex --ask-for-approval read-only "auth 흐름 설명해줘"\n\n# 샌드박스 비활성화 (비권장)\ncodex --no-sandbox "..."\n\n# ~/.codex/config.toml — 영구 기본값\n[defaults]\nmodel = "o4-mini"\nask_for_approval = "on-request"\nsandbox = true' },
+        { t: 'warn', text: "never 모드는 확인 없이 셸 명령을 실행합니다. OS 레벨 샌드박스(Seatbelt/Landlock)가 이를 완화하지만, 완전히 신뢰된 환경에서만 비활성화하세요." },
       ],
     },
   },
@@ -186,6 +186,41 @@ const CODEX_SECTIONS: Section[] = [
     },
   },
   {
+    id: 'codex-slash-commands', icon: '⌨️',
+    en: {
+      title: 'Slash Commands & Extensions',
+      blocks: [
+        { t: 'p', text: "Codex CLI ships with 50+ slash commands. Type / in the prompt to browse the full list. Three extension systems — Skills, Plugins, and Memory — add persistent capabilities across sessions." },
+        { t: 'table', headers: ['Category', 'Commands', 'What they do'], rows: [
+          ['Planning', '/plan, /goal', 'Enter plan mode; set/pause/resume/clear a persistent task goal across sessions'],
+          ['Models', '/model, /fast, /personality', 'Switch model mid-session; toggle fast tier; set communication style'],
+          ['Conversation', '/fork, /side, /new, /resume', 'Branch conversation; open ephemeral side thread; start fresh; restore prior session'],
+          ['Extensions', '/skills, /plugins, /mcp, /hooks', 'Browse Skills; manage Plugins; list MCP tools; view/manage lifecycle Hooks'],
+          ['Context', '/ide, /mention, /diff', 'Include editor open-file context; attach specific files; show git diff'],
+          ['Session', '/compact, /status, /memories', 'Compress conversation history; show token usage; configure memory injection'],
+        ]},
+        { t: 'code', text: '# Import Claude Code skills into Codex\n/import     # migrates .claude/skills/ setup — most skills transfer directly\n\n# Set a persistent goal (survives /new and /fork)\n/goal set "Refactor the auth module to use JWT"\n\n# Non-interactive CI-friendly execution\ncodex exec "run tests and fix all failures"\n\n# Resume a prior session (restores conversation + file state)\ncodex resume\n\n# Multimodal: attach an image to a prompt\ncodex --image ui-screenshot.png "the dropdown is misaligned, fix it"' },
+        { t: 'tip', text: 'Use /import to migrate your Claude Code .claude/skills/ setup — both tools use plain Markdown so most skills transfer without changes. codex exec and codex resume work as top-level subcommands, not slash commands.' },
+      ],
+    },
+    ko: {
+      title: '슬래시 커맨드 & 확장',
+      blocks: [
+        { t: 'p', text: "Codex CLI는 50+ 슬래시 커맨드를 제공합니다. 프롬프트에서 /를 입력하면 전체 목록을 탐색할 수 있습니다. Skills, Plugins, Memory 세 가지 확장 시스템이 세션 간 영구적인 기능을 추가합니다." },
+        { t: 'table', headers: ['카테고리', '커맨드', '기능'], rows: [
+          ['계획', '/plan, /goal', '계획 모드 진입; 세션 간 유지되는 작업 목표 설정/일시정지/재개/취소'],
+          ['모델', '/model, /fast, /personality', '세션 중 모델 전환; fast 티어 토글; 소통 스타일 설정'],
+          ['대화', '/fork, /side, /new, /resume', '대화 분기; 임시 사이드 스레드; 새로 시작; 이전 세션 복원'],
+          ['확장', '/skills, /plugins, /mcp, /hooks', 'Skills 탐색; 플러그인 관리; MCP 도구 목록; 생명주기 훅 확인/관리'],
+          ['컨텍스트', '/ide, /mention, /diff', '에디터 열린 파일 컨텍스트; 특정 파일 첨부; git diff 표시'],
+          ['세션', '/compact, /status, /memories', '대화 압축; 토큰 사용량 표시; 메모리 주입 설정'],
+        ]},
+        { t: 'code', text: '# Claude Code Skills를 Codex로 가져오기\n/import     # .claude/skills/ 설정 마이그레이션 — 대부분의 스킬이 그대로 전환\n\n# 세션 간 유지되는 목표 설정\n/goal set "auth 모듈을 JWT로 리팩토링"\n\n# 비대화형 CI 친화적 실행\ncodex exec "테스트 실행 후 모든 실패 수정"\n\n# 이전 세션 복원 (대화 + 파일 상태 복원)\ncodex resume\n\n# 멀티모달: 이미지 첨부\ncodex --image ui-screenshot.png "드롭다운 정렬이 안 됨, 수정해줘"' },
+        { t: 'tip', text: '/import로 Claude Code .claude/skills/ 설정을 Codex로 마이그레이션할 수 있습니다 — 두 도구 모두 일반 Markdown을 사용하므로 대부분의 스킬이 변경 없이 전환됩니다. codex exec와 codex resume는 슬래시 커맨드가 아닌 최상위 서브커맨드입니다.' },
+      ],
+    },
+  },
+  {
     id: 'codex-workflow', icon: '🔄',
     en: {
       title: 'Real-World Workflow Patterns',
@@ -199,7 +234,7 @@ const CODEX_SECTIONS: Section[] = [
           'Test writing: codex "write unit tests for every function in src/utils/ that has no test"',
         ]},
         { t: 'code', text: '# GitHub Actions integration\n- name: Auto-fix lint\n  run: |\n    npm install -g @openai/codex\n    codex --ask-for-approval never \\\n      --model gpt-4.1 \\\n      "fix all ESLint errors, do not change logic"\n  env:\n    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n\n# Local: open a chat session\ncodex  # interactive mode, no initial prompt\n\n# Pipe context in\ncat error.log | codex "diagnose this error and fix it"' },
-        { t: 'warn', text: 'Codex lacks Hooks, so there is no automatic safeguard against dangerous commands in CI. Always review AGENTS.md prohibitions and use read-only mode for audit tasks.' },
+        { t: 'warn', text: 'In CI, always review AGENTS.md prohibitions and prefer read-only mode for audit tasks. Codex supports lifecycle hooks (/hooks) for additional safeguards — but they must be configured explicitly.' },
       ],
     },
     ko: {
@@ -214,7 +249,7 @@ const CODEX_SECTIONS: Section[] = [
           '테스트 작성: codex "src/utils/ 내 테스트 없는 모든 함수에 단위 테스트 작성"',
         ]},
         { t: 'code', text: '# GitHub Actions 통합\n- name: 자동 lint 수정\n  run: |\n    npm install -g @openai/codex\n    codex --ask-for-approval never \\\n      --model gpt-4.1 \\\n      "모든 ESLint 오류 수정, 로직은 변경하지 말 것"\n  env:\n    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n\n# 로컬: 채팅 세션 열기\ncodex  # 대화형 모드\n\n# 컨텍스트 파이프\ncat error.log | codex "이 오류 진단 후 수정"' },
-        { t: 'warn', text: 'Codex에는 Hooks가 없으므로 CI에서 위험한 명령에 대한 자동 방어책이 없습니다. AGENTS.md의 금지 항목을 항상 검토하고 감사 작업에는 read-only 모드를 사용하세요.' },
+        { t: 'warn', text: 'CI에서는 AGENTS.md의 금지 항목을 항상 검토하고 감사 작업에는 read-only 모드를 선호하세요. Codex는 생명주기 훅(/hooks)을 지원하지만 명시적으로 설정해야 합니다.' },
       ],
     },
   },
@@ -229,10 +264,10 @@ const CURSOR_SECTIONS: Section[] = [
         { t: 'p', text: "Cursor is a VS Code fork that embeds AI at every level of the editing workflow — from single-line Tab suggestions to fully autonomous Agent mode that can read, write, and run code across your entire repo." },
         { t: 'table', headers: ['Feature', 'Cursor', 'Claude Code', 'Codex CLI'], rows: [
           ['Interface', 'IDE (VS Code fork)', 'Terminal CLI', 'Terminal CLI'],
-          ['Models', 'Claude 3.5/3.7, GPT-4o, o3', 'Claude only', 'GPT-4.1, o3, o4-mini'],
+          ['Models', 'Claude 4/3.7, GPT-4o, Gemini', 'Claude only', 'GPT-4.1, o3, o4-mini'],
           ['Context files', '.cursor/rules/*.mdc', 'CLAUDE.md, AGENTS.md', 'AGENTS.md'],
-          ['MCP support', '✅ native', '✅ .mcp.json', '❌'],
-          ['Lifecycle hooks', '❌', '✅ 20+ events', '❌'],
+          ['MCP support', '✅ native', '✅ .mcp.json', '✅ codex mcp'],
+          ['Lifecycle hooks', '❌', '✅ 20+ events', '✅ /hooks'],
           ['Multi-file edit', '✅ Composer', '✅ agentic', '✅'],
           ['PR review', '✅ BugBot (auto)', '⚠️ manual', '⚠️ manual'],
           ['Price', '$20/mo Pro', 'Usage-based', 'Usage-based'],
@@ -246,10 +281,10 @@ const CURSOR_SECTIONS: Section[] = [
         { t: 'p', text: "Cursor는 편집 워크플로우의 모든 레벨에 AI를 내장한 VS Code 포크입니다 — 단일 줄 Tab 제안부터 전체 레포를 읽고 쓰고 실행하는 완전 자율 Agent 모드까지." },
         { t: 'table', headers: ['기능', 'Cursor', 'Claude Code', 'Codex CLI'], rows: [
           ['인터페이스', 'IDE (VS Code 포크)', '터미널 CLI', '터미널 CLI'],
-          ['모델', 'Claude 3.5/3.7, GPT-4o, o3', 'Claude 전용', 'GPT-4.1, o3, o4-mini'],
+          ['모델', 'Claude 4/3.7, GPT-4o, Gemini', 'Claude 전용', 'GPT-4.1, o3, o4-mini'],
           ['컨텍스트 파일', '.cursor/rules/*.mdc', 'CLAUDE.md, AGENTS.md', 'AGENTS.md'],
-          ['MCP 지원', '✅ 네이티브', '✅ .mcp.json', '❌'],
-          ['생명주기 훅', '❌', '✅ 20+ 이벤트', '❌'],
+          ['MCP 지원', '✅ 네이티브', '✅ .mcp.json', '✅ codex mcp'],
+          ['생명주기 훅', '❌', '✅ 20+ 이벤트', '✅ /hooks'],
           ['멀티파일 편집', '✅ Composer', '✅ 에이전틱', '✅'],
           ['PR 리뷰', '✅ BugBot (자동)', '⚠️ 수동', '⚠️ 수동'],
           ['가격', '월 $20 Pro', '사용량 기반', '사용량 기반'],
@@ -272,7 +307,7 @@ const CURSOR_SECTIONS: Section[] = [
           ['Agent mode', 'Toggle in Composer', 'Entire repo + tools', 'Autonomous + tool use', 'Complex tasks'],
           ['BugBot', 'Auto on PR', 'Changed PR files', 'Fully automatic', 'PR review'],
         ]},
-        { t: 'tip', text: 'Agent mode ≈ Claude Code\'s proceed mode. For 30+ tool calls or very long tasks, Claude Code CLI handles larger contexts and has stronger planning via CLAUDE.md + AGENTS.md.' },
+        { t: 'tip', text: 'Agent mode ≈ Claude Code\'s proceed mode. Checkpoints auto-save codebase snapshots before major changes so you can roll back without affecting Git history. For 30+ tool calls or very long tasks, Claude Code CLI handles larger contexts and has stronger planning via CLAUDE.md + AGENTS.md.' },
       ],
     },
     ko: {
@@ -287,7 +322,7 @@ const CURSOR_SECTIONS: Section[] = [
           ['Agent 모드', 'Composer에서 토글', '전체 레포 + 도구', '자율 + 도구 사용', '복잡한 작업'],
           ['BugBot', 'PR에서 자동', 'PR 변경 파일', '완전 자동', 'PR 리뷰'],
         ]},
-        { t: 'tip', text: 'Agent 모드 ≈ Claude Code의 proceed 모드. 30+ 툴 호출이나 매우 긴 작업에는 Claude Code CLI가 더 큰 컨텍스트를 처리하고 CLAUDE.md + AGENTS.md로 더 강력한 계획을 세웁니다.' },
+        { t: 'tip', text: 'Agent 모드 ≈ Claude Code의 proceed 모드. 체크포인트가 주요 변경 전 코드베이스 스냅샷을 자동 저장해 Git 히스토리 없이 되돌릴 수 있습니다. 30+ 툴 호출이나 매우 긴 작업에는 Claude Code CLI가 더 큰 컨텍스트를 처리하고 CLAUDE.md + AGENTS.md로 더 강력한 계획을 세웁니다.' },
       ],
     },
   },
@@ -298,9 +333,9 @@ const CURSOR_SECTIONS: Section[] = [
       blocks: [
         { t: 'p', text: "Cursor rules are NOT equal — they activate at different points. Put universal axioms in Always rules, language rules in Auto Attached, optional checklists in Manual. Misclassifying wastes tokens on every request." },
         { t: 'table', headers: ['Type', 'Frontmatter', 'Activates when', 'Token cost'], rows: [
-          ['Always', 'alwaysApply: true, no globs', 'Every single request', 'Highest — keep < 50 lines'],
+          ['Always Apply', 'alwaysApply: true, no globs', 'Every single request', 'Highest — keep < 50 lines'],
           ['Auto Attached', 'alwaysApply: false, + globs', 'Matching file open/edited', 'Only when relevant'],
-          ['Agent Requested', 'alwaysApply: false, no globs', 'Cursor AI decides via description', '0 if not triggered'],
+          ['Apply Intelligently', 'alwaysApply: false, description only', 'Cursor AI decides via description', '0 if not triggered'],
           ['Manual', '(no frontmatter)', '@rule-name in chat only', '0 until invoked'],
         ]},
         { t: 'code', text: '.cursor/rules/\n  global.mdc           # alwaysApply: true — universal axioms only\n  typescript.mdc       # globs: **/*.ts,**/*.tsx\n  tests.mdc            # globs: **/*.test.*,**/*.spec.*\n  api-routes.mdc       # globs: src/app/api/**\n  migration-guide.mdc  # Manual — @mentioned for DB migrations only\n  review-checklist.mdc # Manual — @mentioned before PR submission\n\n# typescript.mdc example\n---\ndescription: TypeScript strict rules for this project\nglobs: "**/*.ts,**/*.tsx"\nalwaysApply: false\n---\n- No `any`. Use `unknown` + narrowing.\n- All async functions must handle errors (no floating promises).\n- Use discriminated unions over optional fields.' },
@@ -311,9 +346,9 @@ const CURSOR_SECTIONS: Section[] = [
       blocks: [
         { t: 'p', text: "Cursor 규칙은 동등하지 않습니다 — 타입에 따라 다른 시점에 활성화됩니다. 보편적 공리는 Always, 언어 규칙은 Auto Attached, 선택적 체크리스트는 Manual에 넣으세요. 잘못 분류하면 모든 요청에서 토큰을 낭비합니다." },
         { t: 'table', headers: ['타입', '프론트매터', '활성화 시점', '토큰 비용'], rows: [
-          ['Always', 'alwaysApply: true, glob 없음', '모든 단일 요청', '가장 높음 — 50줄 미만 유지'],
+          ['Always Apply', 'alwaysApply: true, glob 없음', '모든 단일 요청', '가장 높음 — 50줄 미만 유지'],
           ['Auto Attached', 'alwaysApply: false, + glob', '일치하는 파일 열릴/편집될 때', '관련성 있을 때만'],
-          ['Agent Requested', 'alwaysApply: false, glob 없음', 'Cursor AI가 description으로 판단', '트리거 없으면 0'],
+          ['Apply Intelligently', 'alwaysApply: false, description만', 'Cursor AI가 description으로 판단', '트리거 없으면 0'],
           ['Manual', '(프론트매터 없음)', '채팅에서 @rule-name 멘션만', '호출 전까지 0'],
         ]},
         { t: 'code', text: '.cursor/rules/\n  global.mdc           # alwaysApply: true — 보편적 공리만\n  typescript.mdc       # globs: **/*.ts,**/*.tsx\n  tests.mdc            # globs: **/*.test.*,**/*.spec.*\n  api-routes.mdc       # globs: src/app/api/**\n  migration-guide.mdc  # Manual — DB 마이그레이션 시만 @멘션\n  review-checklist.mdc # Manual — PR 제출 전 @멘션\n\n# typescript.mdc 예시\n---\ndescription: 이 프로젝트의 TypeScript 엄격 규칙\nglobs: "**/*.ts,**/*.tsx"\nalwaysApply: false\n---\n- any 금지. unknown + 타입 좁히기 사용.\n- 모든 async 함수는 오류 처리 (떠다니는 프로미스 금지).\n- 선택적 필드보다 구별 유니온 선호.' },
