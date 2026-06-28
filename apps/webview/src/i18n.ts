@@ -114,7 +114,7 @@ export interface UIStrings {
 
 const en: UIStrings = {
   title: 'AI Workspace Configurator',
-  subtitle: 'Auto-generate Claude Code & Codex optimization files.',
+  subtitle: 'Detects your stack and generates Claude Code, Cursor & Codex config files automatically.',
   homeTab: 'Run',
   settingsTab: 'Settings',
   previewTab: 'Preview',
@@ -207,7 +207,7 @@ const en: UIStrings = {
 
 const ko: UIStrings = {
   title: 'AI Workspace Configurator',
-  subtitle: 'Claude Code & Codex 최적화 파일을 자동으로 생성합니다.',
+  subtitle: '스택을 감지해 Claude Code · Cursor · Codex 설정 파일을 자동 생성합니다.',
   homeTab: '실행',
   settingsTab: '설정',
   previewTab: '미리보기',
