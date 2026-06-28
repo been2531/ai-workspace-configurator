@@ -39,7 +39,9 @@ export function buildClaudeMd({ stack, profile }: ComposeInput): string {
   const fwRules = frameworkRules(stack, L)
   const aiHints = buildAiWorkflowHints(stack, L)
 
-  return `${metaHeader}${L.title}
+  const descLine = stack.description ? `> **Project:** ${stack.description}\n\n` : ''
+
+  return `${metaHeader}${descLine}${L.title}
 
 ${L.techStack}
 - ${L.labelLang}: ${language}

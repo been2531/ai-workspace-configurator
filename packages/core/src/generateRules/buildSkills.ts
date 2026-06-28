@@ -135,6 +135,44 @@ Steps:
 `,
   )
 
+  // ── /doctor — universal ────────────────────────────────────────────────────
+  skills['doctor'] = skill(
+    'doctor',
+    'Diagnose the health of AI config files in this workspace. Use when config files may be stale or incomplete.',
+    `Diagnose the health of AI configuration files in this workspace.
+
+Check each item below and report **[OK]**, **[WARN]**, or **[MISSING]**:
+
+1. **CLAUDE.md**
+   - Exists at workspace root?
+   - Line count ≤ 80? (Anthropic best practice — longer files risk partial attention)
+   - Contains a project description in the first 5 lines?
+   - Last modified within 30 days of the most recent commit? (stale = stack may have changed)
+
+2. **AGENTS.md**
+   - Exists at workspace root?
+   - Contains at least one agent behavior rule?
+
+3. **Skills directory** (\`.claude/commands/\` or \`CLAUDE/commands/\`)
+   - Directory exists?
+   - At least one \`.md\` file present?
+   - Each skill file has valid YAML frontmatter (\`name:\` and \`description:\` fields)?
+
+4. **MCP config** (\`.mcp.json\`)
+   - Exists?
+   - JSON is valid (parseable)?
+   - Each listed server has a \`command\` or \`url\` field?
+
+5. **Hooks** (\`.claude/settings.json\`)
+   - Exists?
+   - JSON is valid?
+
+After checking all items, summarize:
+- Total OK / WARN / MISSING counts
+- List any WARN or MISSING items with a one-line fix suggestion each
+`,
+  )
+
   // ── /run — stack-specific ───────────────────────────────────────────────────
   const runCmd = buildRunCommand(stack, pm)
   if (runCmd) {

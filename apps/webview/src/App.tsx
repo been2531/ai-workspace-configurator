@@ -48,7 +48,7 @@ export default function App() {
   const [previewFile, setPreviewFile] = useState<PreviewFile>('claudeMd')
   const [previewSkill, setPreviewSkill] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
-  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, hooks: true, cursor: false })
+  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, hooks: true, cursor: false, subPackages: true })
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string; overrideKeys?: string[] } | null>(null)
@@ -376,7 +376,7 @@ function GenerateConfirmModal({ s, fileSelection, selectedPreset, onConfirm, onC
 
 type FileRowEntry =
   | { kind: 'mandatory'; label: string; hint: string; exists: boolean }
-  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills' | 'hooks' | 'cursor'; checked: boolean }
+  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills' | 'hooks' | 'cursor' | 'subPackages'; checked: boolean }
 
 interface HomeTabProps {
   s: ReturnType<typeof t>
@@ -399,6 +399,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, fileSelectio
     { kind: 'optional-toggle', label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills, selKey: 'skills', checked: fileSelection.skills },
     { kind: 'optional-toggle', label: '.claude/settings.json', hint: s.hintHooks, exists: fileStatus.hooks, selKey: 'hooks', checked: fileSelection.hooks },
     { kind: 'optional-toggle', label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, selKey: 'cursor', checked: fileSelection.cursor },
+    ...(fileStatus.isMonorepo ? [{ kind: 'optional-toggle' as const, label: 'sub-package CLAUDE.md', hint: s.hintSubPackages, exists: false, selKey: 'subPackages' as const, checked: fileSelection.subPackages }] : []),
   ]
 
   return (
@@ -714,6 +715,13 @@ function PreviewTab({ s, preview, previewFile, previewSkill, onFileChange, onSki
         </div>
       )}
 
+      {previewFile === 'claudeMd' && (preview.claudeMdLineCount ?? 0) > 80 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 text-xs text-amber-700 dark:text-amber-300">
+          <span>⚠</span>
+          <span>{preview.claudeMdLineCount} lines — consider trimming (Anthropic best practice: keep under 80)</span>
+        </div>
+      )}
+
       {canDiff && viewMode === 'diff' ? (
         <DiffView oldText={oldContent} newText={newContent} />
       ) : (
@@ -806,6 +814,10 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
         </div>
       )}
 
+      {subTab === 'github' && !isSearching && (
+        <SharePresetCard s={s} />
+      )}
+
       {subTab === 'github' && errorNotice && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-amber-300 dark:border-amber-700/40 bg-amber-50 dark:bg-amber-950/25 text-[11px] text-amber-700 dark:text-amber-300">
           <span className="shrink-0 mt-px">⚠</span>
@@ -826,6 +838,91 @@ function PresetsTab({ s, presets, selectedPreset, pendingPresetId, searchQuery, 
           {presetsLoading && subTab === 'github' && (
             <div className="py-3 text-center text-[11px] text-gray-400 dark:text-gray-500 animate-pulse">{s.githubLoadingLabel}</div>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Share Preset Card ────────────────────────────────────────────────────────
+
+const README_TEMPLATE = `# My Claude Code Preset
+
+> A community preset for [describe your stack / use case].
+
+## What this configures
+
+- **CLAUDE.md** — [describe your coding rules]
+- **AGENTS.md** — [describe your agent behavior]
+
+## Best suited for
+
+- Stack: [e.g. Next.js + TypeScript + Prisma]
+- Use case: [e.g. SaaS, API services, ...]
+
+## Usage
+
+Install [AI Workspace Configurator](https://marketplace.visualstudio.com/items?itemName=ai-workspace-configurator.ai-workspace-configurator)
+and search for this repo in the **Presets → GitHub** tab.
+`
+
+function SharePresetCard({ s }: { s: ReturnType<typeof t> }) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(README_TEMPLATE).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {/* noop */})
+  }
+
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 dark:border-white/10 overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors"
+      >
+        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{s.shareTitle}</span>
+        <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 space-y-3 border-t border-gray-100 dark:border-white/8 pt-3">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">{s.shareDesc}</p>
+
+          <div className="space-y-2.5">
+            <div>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{s.shareStep1}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{s.shareStep1Detail}</p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{s.shareStep2}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{s.shareStep2Detail}</p>
+              <code className="inline-block mt-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-white/8 text-xs font-mono text-indigo-600 dark:text-indigo-300 select-all">
+                claude-code
+              </code>
+              <div className="mt-1.5">
+                <button
+                  onClick={() => postMessage({ command: 'openUrl', url: 'https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/classifying-your-repository-with-topics' })}
+                  className="text-[11px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                >
+                  {s.shareStep2Link}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">{s.shareStep3}</p>
+              <button
+                onClick={handleCopy}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/40"
+              >
+                {copied ? s.shareCopiedBtn : s.shareCopyBtn}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

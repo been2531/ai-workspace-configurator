@@ -17,7 +17,7 @@ export async function generateWorkspaceFiles(
   stack: DetectedStack,
   profile?: UserProfile,
   preset?: CommunityPreset,
-  fileSelection?: { mcp?: boolean; skills?: boolean; hooks?: boolean },
+  fileSelection?: { mcp?: boolean; skills?: boolean; hooks?: boolean; subPackages?: boolean },
 ): Promise<GeneratedPreview> {
   const previous = {
     claudeMd:   readSafe(path.join(workspaceRoot, 'CLAUDE.md')),
@@ -80,6 +80,38 @@ export async function generateWorkspaceFiles(
     }
   }
 
+  // Write per-package CLAUDE.md for monorepo sub-packages
+  if (stack.isMonorepo && fileSelection?.subPackages !== false && stack.subPackages?.length) {
+    for (const pkg of stack.subPackages) {
+      const pkgRoot = path.join(workspaceRoot, pkg.relativePath)
+      const pkgClaudePath = path.join(pkgRoot, 'CLAUDE.md')
+      if (fs.existsSync(pkgClaudePath)) continue
+      try {
+        const fw = pkg.frameworks.join(', ') || 'N/A'
+        const pm = stack.packageManager === 'unknown' ? 'npm' : stack.packageManager
+        const content = [
+          `# ${pkg.name}`,
+          '',
+          `> See root \`CLAUDE.md\` for project-wide coding rules.`,
+          '',
+          `## Tech Stack`,
+          `- Language: ${pkg.language}`,
+          `- Framework: ${fw}`,
+          '',
+          `## Build Commands`,
+          '```bash',
+          `${pm} run dev      # development server`,
+          `${pm} run build    # production build`,
+          `${pm} test         # test suite`,
+          '```',
+        ].join('\n')
+        fs.writeFileSync(pkgClaudePath, content, 'utf-8')
+      } catch {
+        // Skip packages we can't write to
+      }
+    }
+  }
+
   return {
     claudeMd: rules.claudeMd,
     agentsMd: rules.agentsMd,
@@ -87,6 +119,7 @@ export async function generateWorkspaceFiles(
     cursorMdc: rules.cursorMdc,
     mcpConfig: mcpJson,
     skills: rules.skills,
+    claudeMdLineCount: rules.claudeMd.split('\n').length,
     previous,
   }
 }

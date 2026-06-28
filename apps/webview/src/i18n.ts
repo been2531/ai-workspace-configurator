@@ -17,6 +17,7 @@ export interface UIStrings {
   hintMcp: string
   hintSkills: string
   hintHooks: string
+  hintSubPackages: string
   allFilesPresent: string
   // Home — actions
   configureBtn: string
@@ -98,6 +99,17 @@ export interface UIStrings {
   fileMandatory: string
   // Error
   errorPrefix: string
+  // Share preset
+  shareTitle: string
+  shareDesc: string
+  shareStep1: string
+  shareStep1Detail: string
+  shareStep2: string
+  shareStep2Detail: string
+  shareStep2Link: string
+  shareStep3: string
+  shareCopyBtn: string
+  shareCopiedBtn: string
 }
 
 const en: UIStrings = {
@@ -114,6 +126,7 @@ const en: UIStrings = {
   hintMcp: 'MCP server auto-configuration',
   hintSkills: 'Slash commands  /run  /test  /review …',
   hintHooks: 'Claude Code hooks — rm -rf guard, lint auto-fix',
+  hintSubPackages: 'Generate a minimal CLAUDE.md for each sub-package (monorepo detected)',
   allFilesPresent: 'All files present. Re-generate to update.',
   configureBtn: '⚡ Generate Config',
   configuringBtn: 'Scanning…',
@@ -180,6 +193,16 @@ const en: UIStrings = {
   cursorOptional: 'Optional',
   fileMandatory: 'Required',
   errorPrefix: 'Error',
+  shareTitle: 'Share your config',
+  shareDesc: 'Your preset will appear in this list for everyone using this extension.',
+  shareStep1: '① Public GitHub repo',
+  shareStep1Detail: 'Create a repo containing CLAUDE.md, AGENTS.md, or .cursorrules with your rules.',
+  shareStep2: '② Add the topic',
+  shareStep2Detail: 'Go to your repo → About → Topics and add:',
+  shareStep2Link: 'Open GitHub Topics docs →',
+  shareStep3: '③ Copy a README template',
+  shareCopyBtn: 'Copy README template',
+  shareCopiedBtn: '✓ Copied',
 }
 
 const ko: UIStrings = {
@@ -196,6 +219,7 @@ const ko: UIStrings = {
   hintMcp: 'MCP 서버 자동 설정',
   hintSkills: '슬래시 커맨드  /run  /test  /review …',
   hintHooks: 'Claude Code 훅 — rm -rf 차단, 린트 자동 수정',
+  hintSubPackages: '서브패키지별 최소 CLAUDE.md 생성 (모노레포 감지됨)',
   allFilesPresent: '모든 파일 존재. 재생성하면 업데이트됩니다.',
   configureBtn: '⚡ 설정 파일 생성',
   configuringBtn: '스캔 중…',
@@ -262,6 +286,16 @@ const ko: UIStrings = {
   cursorOptional: '선택사항',
   fileMandatory: '필수',
   errorPrefix: '오류',
+  shareTitle: '내 설정 공유하기',
+  shareDesc: '이 목록에 등록되면 이 확장 프로그램 사용자 누구나 내 프리셋을 가져올 수 있습니다.',
+  shareStep1: '① 공개 GitHub 레포',
+  shareStep1Detail: 'CLAUDE.md, AGENTS.md, 또는 .cursorrules를 포함한 공개 레포를 만드세요.',
+  shareStep2: '② 토픽 추가',
+  shareStep2Detail: '레포 → About → Topics에 아래 토픽을 추가하세요:',
+  shareStep2Link: 'GitHub Topics 설명 보기 →',
+  shareStep3: '③ README 템플릿 복사',
+  shareCopyBtn: 'README 템플릿 복사',
+  shareCopiedBtn: '✓ 복사됨',
 }
 
 export const UI: Record<Locale, UIStrings> = { en, ko }

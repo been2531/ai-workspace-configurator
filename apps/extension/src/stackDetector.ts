@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { DetectedStack } from '@ai-workspace-configurator/core'
+import type { DetectedStack, SubPackage } from '@ai-workspace-configurator/core'
 
 const MANIFEST_FILES = [
   'package.json',
@@ -43,6 +43,23 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
   const frameworks: string[] = []
   const ambiguities: string[] = []
 
+  // ── Project description (first non-empty description field found) ───────────
+  let projectDescription: string | undefined
+  if (foundManifests.includes('package.json')) {
+    const pkgDesc = readJson<{ description?: string }>(path.join(workspaceRoot, 'package.json'))
+    if (pkgDesc?.description?.trim()) projectDescription = pkgDesc.description.trim()
+  }
+  if (!projectDescription && foundManifests.includes('pyproject.toml')) {
+    const raw = readTextRaw(path.join(workspaceRoot, 'pyproject.toml'))
+    const match = raw.match(/^\s*description\s*=\s*["'](.+?)["']/m)
+    if (match?.[1]?.trim()) projectDescription = match[1].trim()
+  }
+  if (!projectDescription && foundManifests.includes('Cargo.toml')) {
+    const raw = readTextRaw(path.join(workspaceRoot, 'Cargo.toml'))
+    const match = raw.match(/^\s*description\s*=\s*["'](.+?)["']/m)
+    if (match?.[1]?.trim()) projectDescription = match[1].trim()
+  }
+
   // ── JavaScript / TypeScript ──────────────────────────────────────────────────
   if (foundManifests.includes('package.json')) {
     const pkg = readJson<{
@@ -78,10 +95,15 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
       frameworks.push(...uiFrameworks)
     }
 
+    // SolidJS (must check before React to avoid collision when used together)
+    if (deps['solid-js']) frameworks.push('SolidJS')
+
     // Backend frameworks
     if (deps['@nestjs/core']) frameworks.push('NestJS')
     if (deps['express']) frameworks.push('Express')
     if (deps['fastify']) frameworks.push('Fastify')
+    if (deps['hono']) frameworks.push('Hono')
+    if (deps['elysia']) frameworks.push('Elysia')
 
     // Data layer
     if (deps['prisma'] || deps['@prisma/client']) frameworks.push('Prisma')
@@ -185,6 +207,17 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
     }
   }
 
+  // ── Monorepo detection ───────────────────────────────────────────────────────
+  const isMonorepo =
+    fs.existsSync(path.join(workspaceRoot, 'turbo.json')) ||
+    fs.existsSync(path.join(workspaceRoot, 'nx.json')) ||
+    fs.existsSync(path.join(workspaceRoot, 'lerna.json')) ||
+    fs.existsSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'))
+
+  const subPackages: SubPackage[] = isMonorepo
+    ? detectSubPackages(workspaceRoot)
+    : []
+
   const language = detectLanguage(workspaceRoot, foundManifests)
   const hasClaude = fs.existsSync(path.join(workspaceRoot, 'CLAUDE.md'))
   const hasCursor = fs.existsSync(path.join(workspaceRoot, '.cursorrules'))
@@ -209,6 +242,9 @@ export async function detectStack(workspaceRoot: string): Promise<DetectedStack>
     hasSkills,
     confidence,
     ambiguities,
+    description: projectDescription,
+    isMonorepo,
+    subPackages,
   }
 }
 
@@ -227,11 +263,57 @@ function detectLanguage(workspaceRoot: string, manifests: string[]): string {
   return 'Unknown'
 }
 
-function detectPackageManager(workspaceRoot: string): 'npm' | 'pnpm' | 'yarn' | 'unknown' {
+function detectPackageManager(workspaceRoot: string): 'npm' | 'pnpm' | 'yarn' | 'bun' | 'unknown' {
+  if (fs.existsSync(path.join(workspaceRoot, 'bun.lockb'))) return 'bun'
   if (fs.existsSync(path.join(workspaceRoot, 'pnpm-lock.yaml'))) return 'pnpm'
   if (fs.existsSync(path.join(workspaceRoot, 'yarn.lock'))) return 'yarn'
   if (fs.existsSync(path.join(workspaceRoot, 'package-lock.json'))) return 'npm'
   return 'unknown'
+}
+
+function detectSubPackages(workspaceRoot: string): SubPackage[] {
+  const packages: SubPackage[] = []
+  const scanDirs = ['apps', 'packages', 'libs', 'services']
+
+  for (const dir of scanDirs) {
+    const dirPath = path.join(workspaceRoot, dir)
+    if (!fs.existsSync(dirPath)) continue
+    let entries: string[]
+    try { entries = fs.readdirSync(dirPath) } catch { continue }
+
+    for (const entry of entries) {
+      const pkgPath = path.join(dirPath, entry, 'package.json')
+      if (!fs.existsSync(pkgPath)) continue
+      const pkg = readJson<{ name?: string; dependencies?: Record<string, string>; devDependencies?: Record<string, string> }>(pkgPath)
+      if (!pkg) continue
+
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies }
+      const frameworks: string[] = []
+      if (deps['next']) frameworks.push('Next.js')
+      else if (deps['nuxt']) frameworks.push('Nuxt')
+      else if (deps['@sveltejs/kit']) frameworks.push('SvelteKit')
+      else if (deps['react']) frameworks.push('React')
+      else if (deps['vue']) frameworks.push('Vue')
+      else if (deps['solid-js']) frameworks.push('SolidJS')
+      if (deps['hono']) frameworks.push('Hono')
+      if (deps['elysia']) frameworks.push('Elysia')
+      if (deps['@nestjs/core']) frameworks.push('NestJS')
+      if (deps['express']) frameworks.push('Express')
+      if (deps['fastify']) frameworks.push('Fastify')
+
+      const hasTsConfig = fs.existsSync(path.join(dirPath, entry, 'tsconfig.json'))
+      const language = hasTsConfig ? 'TypeScript' : 'JavaScript'
+
+      packages.push({
+        name: pkg.name ?? entry,
+        relativePath: `${dir}/${entry}`,
+        frameworks,
+        language,
+      })
+    }
+  }
+
+  return packages
 }
 
 function detectSkillsDir(workspaceRoot: string): boolean {
@@ -265,6 +347,14 @@ function readJson<T>(filePath: string): T | null {
 function readText(filePath: string): string {
   try {
     return fs.readFileSync(filePath, 'utf-8').toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+function readTextRaw(filePath: string): string {
+  try {
+    return fs.readFileSync(filePath, 'utf-8')
   } catch {
     return ''
   }

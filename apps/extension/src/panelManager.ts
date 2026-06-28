@@ -95,8 +95,13 @@ export class PanelManager implements vscode.WebviewViewProvider {
             } catch { return false }
           })(),
           hooks: fs.existsSync(path.join(workspaceRoot, '.claude', 'settings.json')),
+          isMonorepo:
+            fs.existsSync(path.join(workspaceRoot, 'turbo.json')) ||
+            fs.existsSync(path.join(workspaceRoot, 'nx.json')) ||
+            fs.existsSync(path.join(workspaceRoot, 'lerna.json')) ||
+            fs.existsSync(path.join(workspaceRoot, 'pnpm-workspace.yaml')),
         }
-      : { claude: false, agents: false, cursor: false, mcp: false, skills: false, hooks: false }
+      : { claude: false, agents: false, cursor: false, mcp: false, skills: false, hooks: false, isMonorepo: false }
 
     this.postMessage({
       type: 'init',

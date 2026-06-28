@@ -6,6 +6,7 @@ import { generateWorkspaceFiles } from './fileGenerator'
 import { PanelManager } from './panelManager'
 import { getProfile, saveProfile, getSelectedPreset } from './profileStore'
 import { readGeneratedMetadata, checkStaleness, describeStaleness } from './staleness'
+import { checkSkillsUpdate } from './skillsUpdateChecker'
 import type { Locale, DetectedStack } from '@ai-workspace-configurator/core'
 
 const MESSAGES: Record<Locale, {
@@ -219,6 +220,9 @@ export function activate(context: vscode.ExtensionContext) {
     }
     // Already configured and not stale — status bar is sufficient, no popup
   })()
+
+  // Background: check anthropics/skills for new skill templates (max once per day)
+  void checkSkillsUpdate(context, getProfile(context).locale ?? 'en')
 }
 
 export function deactivate() {}

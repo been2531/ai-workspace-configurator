@@ -3,11 +3,18 @@ export type { Locale }
 
 // ─── Stack Detection ────────────────────────────────────────────────────────
 
+export interface SubPackage {
+  name: string
+  relativePath: string
+  frameworks: string[]
+  language: string
+}
+
 export interface DetectedStack {
   language: string
   frameworks: string[]
   manifests: string[]
-  packageManager: 'npm' | 'pnpm' | 'yarn' | 'unknown'
+  packageManager: 'npm' | 'pnpm' | 'yarn' | 'bun' | 'unknown'
   hasClaude: boolean
   hasCursor: boolean
   hasCursorMdc: boolean
@@ -16,6 +23,9 @@ export interface DetectedStack {
   hasSkills: boolean
   confidence: 'certain' | 'ambiguous' | 'empty'
   ambiguities: string[]
+  description?: string
+  isMonorepo?: boolean
+  subPackages?: SubPackage[]
 }
 
 // ─── User Profile ────────────────────────────────────────────────────────────
@@ -104,7 +114,7 @@ export interface McpConfig {
 export interface McpServer {
   command: string
   args: readonly string[]
-  env?: Record<string, string>
+  env?: Readonly<Record<string, string>>
 }
 
 // ─── CLI Prompts ────────────────────────────────────────────────────────────
@@ -139,6 +149,7 @@ export interface FileStatus {
   mcp: boolean
   skills: boolean
   hooks: boolean
+  isMonorepo?: boolean
 }
 
 export interface GeneratedPreview {
@@ -148,6 +159,7 @@ export interface GeneratedPreview {
   cursorMdc: string
   mcpConfig: string
   skills: Record<string, string>
+  claudeMdLineCount: number
   previous: {
     claudeMd: string
     agentsMd: string
@@ -167,7 +179,7 @@ export type ExtensionMessage =
 // Webview → Extension
 export type WebviewMessage =
   | { command: 'ready' }
-  | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean; hooks: boolean } }
+  | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean; hooks: boolean; subPackages?: boolean } }
   | { command: 'saveProfile'; payload: UserProfile }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }

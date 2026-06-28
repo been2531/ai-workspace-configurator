@@ -1,6 +1,6 @@
 import type { ComposeInput, McpConfig } from '../types'
 
-// 검증된 공식 MCP 서버 패키지만 사용
+// 앤트로픽 공식 MCP 서버 패키지
 const MCP_SERVERS = {
   filesystem: {
     command: 'npx',
@@ -16,11 +16,25 @@ const MCP_SERVERS = {
   },
   postgres: {
     command: 'npx',
-    args: ['-y', '@modelcontextprotocol/server-postgres'],
+    args: ['-y', '@modelcontextprotocol/server-postgres', '${POSTGRES_CONNECTION_STRING}'],
   },
   fetch: {
     command: 'npx',
     args: ['-y', '@modelcontextprotocol/server-fetch'],
+  },
+  puppeteer: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-puppeteer'],
+  },
+  slack: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-slack'],
+    env: { SLACK_BOT_TOKEN: '${SLACK_BOT_TOKEN}', SLACK_TEAM_ID: '${SLACK_TEAM_ID}' },
+  },
+  github: {
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-github'],
+    env: { GITHUB_PERSONAL_ACCESS_TOKEN: '${GITHUB_PERSONAL_ACCESS_TOKEN}' },
   },
 } as const
 
@@ -36,12 +50,23 @@ export function buildMcpConfig({ stack, profile }: ComposeInput): McpConfig {
   }
 
   // 스택 기반 추가 추천
+  if (stack.frameworks.some((f) => ['Django', 'FastAPI', 'Spring Boot', 'Rails', 'Laravel'].includes(f))) {
+    servers['postgres'] = MCP_SERVERS.postgres
+  }
+
   if (stack.frameworks.includes('Prisma') || stack.frameworks.includes('Drizzle')) {
-    servers['sqlite'] = MCP_SERVERS.sqlite
+    if (!servers['postgres']) servers['sqlite'] = MCP_SERVERS.sqlite
+  }
+
+  if (stack.frameworks.includes('Next.js') || stack.frameworks.some((f) => ['NestJS', 'Express', 'Fastify'].includes(f))) {
+    servers['github'] = MCP_SERVERS.github
+  }
+
+  if (stack.frameworks.some((f) => ['Playwright', 'Cypress'].includes(f))) {
+    servers['puppeteer'] = MCP_SERVERS.puppeteer
   }
 
   if (stack.frameworks.includes('Firebase')) {
-    // Firebase는 공식 MCP 서버 없음 — fetch로 대체
     servers['fetch'] = MCP_SERVERS.fetch
   }
 
