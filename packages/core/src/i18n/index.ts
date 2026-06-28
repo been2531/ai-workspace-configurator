@@ -19,6 +19,8 @@ export interface GeneratedLocale {
     testingSection: string
     testingGeneric: string
     aiWorkflowTitle: string
+    antiPatternsTitle: string
+    antiPatternsPlaceholder: string
     enterManually: string
     typeStrict: string
     typeMod: string
@@ -101,6 +103,8 @@ const en: GeneratedLocale = {
     testingGeneric:
       '- Co-locate unit tests with source files (`*.test.ts`).\n- Test behavior, not implementation details.\n- Mock only external dependencies (network, filesystem, DB).',
     aiWorkflowTitle: '## Working with this Codebase',
+    antiPatternsTitle: '## Anti-patterns',
+    antiPatternsPlaceholder: '<!-- Document project-specific pitfalls here as you discover them.\n     Example: "Never use setTimeout to work around race conditions"\n     Example: "No barrel index.ts files — causes circular import issues" -->',
     enterManually: 'Enter build commands manually.',
     typeStrict: '- No `any`. Use `unknown` + narrowing for uncertain types.',
     typeMod: '- `any` allowed only at external API boundaries.',
@@ -371,6 +375,8 @@ const ko: GeneratedLocale = {
     testingGeneric:
       '- 단위 테스트는 소스 파일 옆에 위치 (`*.test.ts`).\n- 구현이 아닌 동작을 테스트.\n- 외부 의존성(네트워크, 파일시스템, DB)만 모킹.',
     aiWorkflowTitle: '## 이 코드베이스와 협업하기',
+    antiPatternsTitle: '## 안티패턴',
+    antiPatternsPlaceholder: '<!-- 프로젝트를 진행하면서 발견한 주의사항을 여기에 추가하세요.\n     예: "경쟁 조건을 setTimeout으로 회피하지 말 것"\n     예: "barrel index.ts 파일 금지 — 순환 import 문제 발생" -->',
     enterManually: '빌드 명령어를 직접 입력해주세요.',
     typeStrict: '- `any` 금지. 불확실한 타입은 `unknown` + narrowing.',
     typeMod: '- `any`는 외부 API 경계에서만 허용.',

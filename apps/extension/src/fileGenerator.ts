@@ -17,7 +17,7 @@ export async function generateWorkspaceFiles(
   stack: DetectedStack,
   profile?: UserProfile,
   preset?: CommunityPreset,
-  fileSelection?: { mcp?: boolean; skills?: boolean },
+  fileSelection?: { mcp?: boolean; skills?: boolean; hooks?: boolean },
 ): Promise<GeneratedPreview> {
   const previous = {
     claudeMd:   readSafe(path.join(workspaceRoot, 'CLAUDE.md')),
@@ -69,6 +69,17 @@ export async function generateWorkspaceFiles(
     }
   }
 
+  // Write .claude/settings.json (hooks template) if selected and not already present
+  const settingsPath = path.join(workspaceRoot, '.claude', 'settings.json')
+  if (fileSelection?.hooks !== false && !fs.existsSync(settingsPath)) {
+    try {
+      fs.mkdirSync(path.join(workspaceRoot, '.claude'), { recursive: true })
+      fs.writeFileSync(settingsPath, buildHooksConfig(stack), 'utf-8')
+    } catch (err) {
+      throw new Error(`Failed to write .claude/settings.json: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   return {
     claudeMd: rules.claudeMd,
     agentsMd: rules.agentsMd,
@@ -78,4 +89,40 @@ export async function generateWorkspaceFiles(
     skills: rules.skills,
     previous,
   }
+}
+
+function buildHooksConfig(stack: DetectedStack): string {
+  const isJs = stack.manifests.includes('package.json')
+
+  const hooks: Record<string, unknown[]> = {
+    PreToolUse: [
+      {
+        matcher: 'Bash',
+        hooks: [
+          {
+            type: 'command',
+            // exit 2 blocks the command; output is forwarded to Claude
+            command: 'cmd="$CLAUDE_TOOL_INPUT_COMMAND"; echo "$cmd" | grep -qE \'rm\\s+-[rRfF]*rf|rm\\s+-[rRfF]*f[rRfF]\' && { echo "Blocked: rm -rf detected. Use explicit paths or confirm with user."; exit 2; }; exit 0',
+          },
+        ],
+      },
+    ],
+  }
+
+  if (isJs) {
+    hooks.PostToolUse = [
+      {
+        matcher: 'Edit|Write|MultiEdit',
+        hooks: [
+          {
+            type: 'command',
+            // auto-fix lint errors after every file write; fails silently if eslint is absent
+            command: '[ -f "$(pwd)/node_modules/.bin/eslint" ] && npx eslint --fix "$CLAUDE_TOOL_INPUT_FILE" 2>/dev/null; exit 0',
+          },
+        ],
+      },
+    ]
+  }
+
+  return JSON.stringify({ hooks }, null, 2)
 }

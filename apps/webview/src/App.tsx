@@ -21,7 +21,7 @@ type Status = 'idle' | 'scanning' | 'done' | 'error'
 type Theme = 'dark' | 'light'
 type PreviewFile = 'claudeMd' | 'agentsMd' | 'cursorRules' | 'mcpConfig' | 'skills'
 
-const DEFAULT_FILE_STATUS: FileStatus = { claude: false, agents: false, cursor: false, mcp: false, skills: false }
+const DEFAULT_FILE_STATUS: FileStatus = { claude: false, agents: false, cursor: false, mcp: false, skills: false, hooks: false }
 const STATIC_PREVIEW_FILES: { key: PreviewFile; label: string }[] = [
   { key: 'claudeMd', label: 'CLAUDE.md' },
   { key: 'agentsMd', label: 'AGENTS.md' },
@@ -32,7 +32,12 @@ const STATIC_PREVIEW_FILES: { key: PreviewFile; label: string }[] = [
 export default function App() {
   const [locale, setLocale] = useState<Locale>('en')
   const [theme, setTheme] = useState<Theme>(() => {
-    try { return (localStorage.getItem('aiw-theme') as Theme) ?? 'dark' } catch { return 'dark' }
+    try {
+      const saved = localStorage.getItem('aiw-theme') as Theme | null
+      if (saved === 'light' || saved === 'dark') return saved
+    } catch {}
+    // Detect VS Code theme from body class (set by VS Code before React mounts)
+    return document.body.classList.contains('vscode-light') ? 'light' : 'dark'
   })
   const [tab, setTab] = useState<Tab>('settings')
   const [status, setStatus] = useState<Status>('idle')
@@ -43,7 +48,7 @@ export default function App() {
   const [previewFile, setPreviewFile] = useState<PreviewFile>('claudeMd')
   const [previewSkill, setPreviewSkill] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
-  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, cursor: false })
+  const [fileSelection, setFileSelection] = useState({ mcp: true, skills: true, hooks: true, cursor: false })
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [selectedPreset, setSelectedPreset] = useState<{ id: string; name: string; overrideKeys?: string[] } | null>(null)
@@ -66,6 +71,18 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
   }, [isDark])
+
+  // Follow VS Code theme changes unless user has a manual override in localStorage
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      try { if (localStorage.getItem('aiw-theme')) return } catch {}
+      const next: Theme = document.body.classList.contains('vscode-light') ? 'light' : 'dark'
+      setTheme(next)
+      document.documentElement.classList.toggle('dark', next === 'dark')
+    })
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     postMessage({ command: 'ready' })
@@ -359,7 +376,7 @@ function GenerateConfirmModal({ s, fileSelection, selectedPreset, onConfirm, onC
 
 type FileRowEntry =
   | { kind: 'mandatory'; label: string; hint: string; exists: boolean }
-  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills' | 'cursor'; checked: boolean }
+  | { kind: 'optional-toggle'; label: string; hint: string; exists: boolean; selKey: 'mcp' | 'skills' | 'hooks' | 'cursor'; checked: boolean }
 
 interface HomeTabProps {
   s: ReturnType<typeof t>
@@ -367,8 +384,8 @@ interface HomeTabProps {
   errorMsg: string | undefined
   fileStatus: FileStatus
   selectedPreset: { id: string; name: string } | null
-  fileSelection: { mcp: boolean; skills: boolean; cursor: boolean }
-  onFileSelectionChange: (sel: { mcp: boolean; skills: boolean; cursor: boolean }) => void
+  fileSelection: { mcp: boolean; skills: boolean; hooks: boolean; cursor: boolean }
+  onFileSelectionChange: (sel: { mcp: boolean; skills: boolean; hooks: boolean; cursor: boolean }) => void
   onGenerateClick: () => void
   onGoToPresets: () => void
   onGoToSettings: () => void
@@ -380,6 +397,7 @@ function HomeTab({ s, status, errorMsg, fileStatus, selectedPreset, fileSelectio
     { kind: 'mandatory', label: 'AGENTS.md', hint: s.hintAgents, exists: fileStatus.agents },
     { kind: 'optional-toggle', label: '.mcp.json', hint: s.hintMcp, exists: fileStatus.mcp, selKey: 'mcp', checked: fileSelection.mcp },
     { kind: 'optional-toggle', label: s.skillsLabel, hint: s.hintSkills, exists: fileStatus.skills, selKey: 'skills', checked: fileSelection.skills },
+    { kind: 'optional-toggle', label: '.claude/settings.json', hint: s.hintHooks, exists: fileStatus.hooks, selKey: 'hooks', checked: fileSelection.hooks },
     { kind: 'optional-toggle', label: '.cursorrules', hint: s.hintCursor, exists: fileStatus.cursor, selKey: 'cursor', checked: fileSelection.cursor },
   ]
 

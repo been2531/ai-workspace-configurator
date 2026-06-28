@@ -7,7 +7,12 @@ const PRESET_KEY = 'aiWorkspace.selectedPreset'
 
 export function getProfile(ctx: vscode.ExtensionContext): UserProfile {
   const stored = ctx.globalState.get<UserProfile>(PROFILE_KEY)
-  if (!stored) return DEFAULT_PROFILE
+  if (!stored) {
+    // First run — detect locale from VS Code environment
+    const vscodeLang = vscode.env.language ?? 'en'
+    const locale = vscodeLang.startsWith('ko') ? 'ko' : 'en'
+    return { ...DEFAULT_PROFILE, locale, generatedLocale: locale }
+  }
   return {
     ...DEFAULT_PROFILE,
     ...stored,

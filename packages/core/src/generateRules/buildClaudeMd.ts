@@ -64,7 +64,11 @@ ${commentRule}
 ${L.security}
 ${L.secApiKey}
 ${L.secUserInput}
-${testingSection}${fwRules}${aiHints}`
+${testingSection}${fwRules}${aiHints}
+${L.antiPatternsTitle}
+
+${L.antiPatternsPlaceholder}
+`
 }
 
 // ─── Project Structure ────────────────────────────────────────────────────────

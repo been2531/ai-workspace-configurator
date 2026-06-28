@@ -94,8 +94,9 @@ export class PanelManager implements vscode.WebviewViewProvider {
                 fs.readdirSync(skillsDir).some((f) => f.endsWith('.md'))
             } catch { return false }
           })(),
+          hooks: fs.existsSync(path.join(workspaceRoot, '.claude', 'settings.json')),
         }
-      : { claude: false, agents: false, cursor: false, mcp: false, skills: false }
+      : { claude: false, agents: false, cursor: false, mcp: false, skills: false, hooks: false }
 
     this.postMessage({
       type: 'init',

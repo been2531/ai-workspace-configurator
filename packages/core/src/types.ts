@@ -138,6 +138,7 @@ export interface FileStatus {
   cursor: boolean
   mcp: boolean
   skills: boolean
+  hooks: boolean
 }
 
 export interface GeneratedPreview {
@@ -166,7 +167,7 @@ export type ExtensionMessage =
 // Webview → Extension
 export type WebviewMessage =
   | { command: 'ready' }
-  | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean } }
+  | { command: 'configure'; fileSelection?: { mcp: boolean; skills: boolean; hooks: boolean } }
   | { command: 'saveProfile'; payload: UserProfile }
   | { command: 'searchPresets'; query: string }
   | { command: 'selectPreset'; presetId: string | null }

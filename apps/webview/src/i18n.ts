@@ -16,6 +16,7 @@ export interface UIStrings {
   hintCursor: string
   hintMcp: string
   hintSkills: string
+  hintHooks: string
   allFilesPresent: string
   // Home — actions
   configureBtn: string
@@ -112,6 +113,7 @@ const en: UIStrings = {
   hintCursor: 'Cursor / Codex inline rules (token-efficient)',
   hintMcp: 'MCP server auto-configuration',
   hintSkills: 'Slash commands  /run  /test  /review …',
+  hintHooks: 'Claude Code hooks — rm -rf guard, lint auto-fix',
   allFilesPresent: 'All files present. Re-generate to update.',
   configureBtn: '⚡ Generate Config',
   configuringBtn: 'Scanning…',
@@ -193,6 +195,7 @@ const ko: UIStrings = {
   hintCursor: 'Cursor / Codex 인라인 규칙 (토큰 절약형)',
   hintMcp: 'MCP 서버 자동 설정',
   hintSkills: '슬래시 커맨드  /run  /test  /review …',
+  hintHooks: 'Claude Code 훅 — rm -rf 차단, 린트 자동 수정',
   allFilesPresent: '모든 파일 존재. 재생성하면 업데이트됩니다.',
   configureBtn: '⚡ 설정 파일 생성',
   configuringBtn: '스캔 중…',

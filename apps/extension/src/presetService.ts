@@ -5,39 +5,47 @@ import type { CommunityPreset, PresetSummary } from '@ai-workspace-configurator/
 export const BUNDLED_PRESETS: CommunityPreset[] = [
   {
     id: 'karpathy/agent-os',
-    name: 'Karpathy Agent OS',
+    name: 'Karpathy Coding Principles',
     author: 'karpathy',
-    description: 'Inspired by Andrej Karpathy\'s LLM OS concept. Adds structured <think> pre-reasoning blocks and a 4-tier agent hierarchy to AGENTS.md.',
-    tags: ['claude-code', 'multi-agent', 'reasoning'],
-    publishedAt: '2025-06-01',
+    description: 'Andrej Karpathy\'s 4 core coding principles: think before coding, simplicity first, surgical changes, and goal-driven execution.',
+    tags: ['claude-code', 'best-practices', 'minimal'],
+    publishedAt: '2026-01-27',
     overrides: {
-      agentsMd: `# AGENTS.md — Karpathy Agent OS
+      agentsMd: `# AGENTS.md — Karpathy Coding Principles
 
-## LLM OS Pre-Reasoning Protocol
+## 1. Think Before Coding
 
-Before every task, reason step-by-step:
+State your assumptions explicitly before writing any code.
+If uncertain about the intent, ask — do not guess silently.
+If multiple interpretations exist, present them and let the user choose.
 
-<think>
-1. What is the purpose of this change?
-2. Which parts of the system are affected?
-3. What could go wrong?
-4. What is the minimal change to achieve the goal?
-</think>
+## 2. Simplicity First
 
-## Agent Hierarchy
+Write the minimum code that solves the stated problem.
+- No speculative features
+- No abstractions for single-use code
+- No "flexibility" that wasn't requested
+- No refactoring of nearby code unless it is the task
 
-| Layer | Role |
-|-------|------|
-| System Agent | Architecture decisions, defines invariants |
-| Planner | Requirements → implementation plan |
-| Implementer | Plan → code |
-| Critic | Code → review and feedback |
+## 3. Surgical Changes
+
+Touch only the code directly related to the request.
+Do not reformat, rename, or restructure anything outside the change boundary.
+Preserve existing comments, whitespace, and style in untouched areas.
+
+## 4. Goal-Driven Execution
+
+Before starting, convert the request into explicit success criteria:
+- What does "done" look like?
+- How will you verify it?
+
+Then implement and verify against those criteria.
 
 ## Absolute Prohibitions
 
-- No code omission (\`// ...\`, \`// rest\`) ever
-- No large-scale changes without a plan
-- No type assertions (\`as any\`)
+- No code omission (\`// ...\`, \`// rest remains the same\`) ever
+- No \`as any\` type assertions
+- No large-scale changes without an explicit plan confirmed by the user
 `,
     },
   },

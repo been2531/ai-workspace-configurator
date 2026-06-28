@@ -2,7 +2,7 @@
   "name": "ai-workspace-configurator",
   "displayName": "AI Workspace Configurator",
   "description": "Auto-generate Claude Code & Codex optimization files (CLAUDE.md, AGENTS.md, .cursorrules, MCP config, slash commands) by detecting your project stack.",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "publisher": "ai-workspace-configurator",
   "license": "MIT",
   "repository": {
@@ -58,6 +58,43 @@
       {
         "command": "aiWorkspace.openPanel",
         "title": "AI Workspace: Open Dashboard"
+      }
+    ],
+    "walkthroughs": [
+      {
+        "id": "aiWorkspace.gettingStarted",
+        "title": "Get Started with AI Workspace Configurator",
+        "description": "Auto-generate Claude Code & Codex config files from your project stack in minutes.",
+        "steps": [
+          {
+            "id": "step-open",
+            "title": "Open your project folder",
+            "description": "Open the workspace you want to configure. Stack detection (language, framework, package manager) runs automatically.\n\n[Open Folder](command:vscode.openFolder)",
+            "media": { "markdown": "walkthroughs/step-open.md" },
+            "completionEvents": ["onView:aiWorkspace.sidebarView"]
+          },
+          {
+            "id": "step-settings",
+            "title": "Choose your coding style",
+            "description": "Set type strictness, paradigm, comment style, and agent autonomy in the Settings tab.\n\n[Open Dashboard](command:aiWorkspace.openPanel)",
+            "media": { "markdown": "walkthroughs/step-settings.md" },
+            "completionEvents": ["onCommand:aiWorkspace.openPanel"]
+          },
+          {
+            "id": "step-generate",
+            "title": "Generate config files",
+            "description": "Click ⚡ Generate in the Home tab. All files are written in seconds.\n\n[Generate Now](command:aiWorkspace.configure)",
+            "media": { "markdown": "walkthroughs/step-generate.md" },
+            "completionEvents": ["onCommand:aiWorkspace.configure"]
+          },
+          {
+            "id": "step-presets",
+            "title": "Apply a community preset",
+            "description": "Browse built-in presets (Karpathy, Minimal, Strict TypeScript) or search GitHub repos tagged `claude-code`.\n\n[Open Dashboard](command:aiWorkspace.openPanel)",
+            "media": { "markdown": "walkthroughs/step-presets.md" },
+            "completionEvents": ["onView:aiWorkspace.sidebarView"]
+          }
+        ]
       }
     ],
     "menus": {
